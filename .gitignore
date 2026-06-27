@@ -1,0 +1,19 @@
+# Rust
+/target
+**/*.rs.bk
+
+# Node
+node_modules/
+dist/
+dist-docs/
+.pnpm-store/
+
+# Env / секреты
+.env
+.env.*
+
+# OS / редакторы
+.DS_Store
+*.log
+.idea/
+.vscode/

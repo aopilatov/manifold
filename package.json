@@ -1,0 +1,13 @@
+{
+  "name": "socket-monorepo",
+  "private": true,
+  "version": "0.1.0",
+  "packageManager": "pnpm@9.12.0",
+  "scripts": {
+    "proto:gen": "pnpm --filter @socket/proto-gen generate",
+    "web:dev": "pnpm --filter @socket/web dev",
+    "web:build": "pnpm --filter @socket/web build",
+    "docs:dev": "cd docs && npx @docmd/core dev",
+    "docs:build": "cd docs && npx @docmd/core build"
+  }
+}

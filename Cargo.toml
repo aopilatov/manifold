@@ -1,0 +1,39 @@
+[workspace]
+resolver = "2"
+members = [
+    "crates/protocol",
+    "crates/broker",
+    "crates/core",
+    "crates/server",
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+license = "MIT"
+rust-version = "1.80"
+
+[workspace.dependencies]
+tokio = { version = "1", features = ["full"] }
+axum = { version = "0.7", features = ["ws"] }
+tower = "0.5"
+tower-http = { version = "0.6", features = ["cors", "trace"] }
+tonic = "0.12"
+prost = "0.13"
+serde = { version = "1", features = ["derive"] }
+toml = "0.8"
+redis = { version = "0.27", features = ["tokio-comp", "connection-manager"] }
+dashmap = "6"
+jsonwebtoken = "9"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
+thiserror = "2"
+anyhow = "1"
+async-trait = "0.1"
+futures = "0.3"
+humantime-serde = "1"
+
+# локальные крейты
+socket-protocol = { path = "crates/protocol" }
+socket-broker = { path = "crates/broker" }
+socket-core = { path = "crates/core" }

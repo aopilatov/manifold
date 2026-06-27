@@ -1,0 +1,201 @@
+syntax = "proto3";
+package socket.v1;
+
+// ──────────────────────────────────────────────
+//  Клиентский протокол (WebSocket / SSE)
+// ──────────────────────────────────────────────
+
+// Клиент → сервер
+message Command {
+  uint32 id = 1;                         // корреляционный id; уникален в рамках соединения
+  oneof method {
+    ConnectRequest     connect     = 2;
+    SubscribeRequest   subscribe   = 3;
+    UnsubscribeRequest unsubscribe = 4;
+    PublishRequest     publish     = 5;
+    PresenceRequest    presence    = 6;
+    HistoryRequest     history     = 7;
+    PingRequest        ping        = 8;
+    RefreshRequest     refresh     = 9;   // продление СОЕДИНЕНИЯ новым JWT
+    SubRefreshRequest  sub_refresh = 10;  // продление ПОДПИСКИ новым sub-токеном
+  }
+}
+
+// Сервер → клиент
+message Reply {
+  uint32 id = 1;                         // 0 ⇒ асинхронный Push
+  Error  error = 2;
+  oneof payload {
+    ConnectResult     connect     = 3;
+    SubscribeResult   subscribe   = 4;
+    UnsubscribeResult unsubscribe = 5;
+    PublishResult     publish     = 6;
+    PresenceResult    presence    = 7;
+    HistoryResult     history     = 8;
+    PongResult        pong        = 9;
+    Push              push        = 10;
+  }
+}
+
+message Error {
+  uint32 code = 1;                       // стабильный машинный код
+  string message = 2;
+  bool   temporary = 3;                  // true ⇒ имеет смысл повторить (backoff)
+}
+
+// --- Команды ---
+message ConnectRequest {
+  string token = 1;                      // connection JWT (claim channels[])
+  map<string, SubscribeRequest> subs = 2; // батч-восстановление подписок за 1 RTT (реконнект)
+  map<string, string> headers = 3;
+  string name = 4;                       // имя SDK
+  uint32 protocol_version = 5;
+}
+message SubscribeRequest {
+  string channel = 1;
+  string token = 2;                      // опц. sub-токен для приватного канала
+  bool   recover = 3;
+  StreamPosition position = 4;
+}
+message UnsubscribeRequest { string channel = 1; }
+message PublishRequest {
+  string channel = 1;
+  bytes  data = 2;
+  bool   transient = 3;                  // fire-and-forget: минует историю/offset (typing и т.п.)
+}
+message PresenceRequest { string channel = 1; }
+message HistoryRequest {
+  string channel = 1;
+  int32  limit = 2;
+  StreamPosition since = 3;
+  bool   reverse = 4;
+}
+message RefreshRequest    { string token = 1; }
+message SubRefreshRequest { string channel = 1; string token = 2; }
+message PingRequest {}
+
+// --- Результаты ---
+message ConnectResult {
+  string client = 1;
+  uint32 ping_interval_ms = 2;
+  uint32 expires_in_s = 3;               // 0 = бессрочно
+  bytes  data = 4;
+  map<string, SubscribeResult> subs = 5; // результат каждой восстановленной подписки
+  string session = 6;                    // опц. id для server-side resume
+}
+message SubscribeResult {
+  bool recoverable = 1;
+  StreamPosition position = 2;
+  bool recovered = 3;
+  repeated Publication publications = 4; // досылка пропущенного
+  bool positioned = 5;
+}
+message UnsubscribeResult {}
+message PublishResult { StreamPosition position = 1; }
+message PresenceResult { map<string, ClientInfo> presence = 1; }
+message HistoryResult { repeated Publication publications = 1; StreamPosition position = 2; }
+message PongResult {}
+
+// --- Асинхронные пуши (Reply.id = 0) ---
+message Push {
+  string channel = 1;
+  oneof event {
+    Publication pub         = 2;
+    Join        join        = 3;
+    Leave       leave       = 4;
+    Unsubscribe unsubscribe = 5;         // сервер принудительно отписал
+    Disconnect  disconnect  = 6;         // сервер закрывает соединение
+  }
+}
+
+message Publication {
+  bytes  data = 1;                       // прикладной payload (движок не парсит)
+  uint64 offset = 2;                     // позиция в потоке канала (recovery)
+  ClientInfo info = 3;
+  map<string, string> tags = 4;
+}
+message Join  { ClientInfo info = 1; }
+message Leave { ClientInfo info = 1; }
+message Unsubscribe { uint32 code = 1; string reason = 2; }
+message Disconnect  { uint32 code = 1; string reason = 2; bool reconnect = 3; }
+
+message ClientInfo {
+  string user = 1;
+  string client = 2;
+  bytes  conn_info = 3;
+  bytes  chan_info = 4;
+}
+
+// Фундамент recovery
+message StreamPosition {
+  uint64 offset = 1;                     // монотонный номер последнего сообщения
+  string epoch = 2;                      // метка жизни потока; смена ⇒ история сброшена
+}
+
+// ──────────────────────────────────────────────
+//  Server API (server-to-server, HTTP + gRPC)
+// ──────────────────────────────────────────────
+
+service ServerApi {
+  rpc Publish       (PublishApiRequest)       returns (PublishApiResponse);
+  rpc Broadcast     (BroadcastApiRequest)     returns (BroadcastApiResponse);
+  rpc Presence      (PresenceApiRequest)      returns (PresenceApiResponse);
+  rpc PresenceStats (PresenceStatsApiRequest) returns (PresenceStatsApiResponse);
+  rpc History       (HistoryApiRequest)       returns (HistoryApiResponse);
+  rpc HistoryRemove (HistoryRemoveApiRequest) returns (HistoryRemoveApiResponse);
+  rpc Subscribe     (SubscribeApiRequest)     returns (SubscribeApiResponse);
+  rpc Unsubscribe   (UnsubscribeApiRequest)   returns (UnsubscribeApiResponse);
+  rpc Disconnect    (DisconnectApiRequest)    returns (DisconnectApiResponse);
+  rpc UserOnline    (UserOnlineApiRequest)    returns (UserOnlineApiResponse);
+  rpc Channels      (ChannelsApiRequest)      returns (ChannelsApiResponse);
+  rpc Info          (InfoApiRequest)          returns (InfoApiResponse);
+  rpc Batch         (BatchApiRequest)         returns (BatchApiResponse);
+  rpc PublishStream (stream PublishApiRequest) returns (stream PublishApiResponse);
+}
+
+message PublishApiRequest {
+  string channel = 1;
+  bytes  data = 2;
+  string idempotency_key = 3;
+  map<string, string> tags = 4;
+}
+message PublishApiResponse { Error error = 1; uint64 offset = 2; string epoch = 3; }
+
+message BroadcastApiRequest { repeated string channels = 1; bytes data = 2; string idempotency_key = 3; }
+message BroadcastApiResponse { Error error = 1; map<string, PublishApiResponse> responses = 2; }
+
+message PresenceApiRequest { string channel = 1; }
+message PresenceApiResponse { Error error = 1; map<string, ClientInfo> presence = 2; }
+
+message PresenceStatsApiRequest { string channel = 1; }
+message PresenceStatsApiResponse { Error error = 1; uint32 num_clients = 2; uint32 num_users = 3; }
+
+message HistoryApiRequest { string channel = 1; int32 limit = 2; StreamPosition since = 3; bool reverse = 4; }
+message HistoryApiResponse { Error error = 1; repeated Publication publications = 2; StreamPosition position = 3; }
+
+message HistoryRemoveApiRequest { string channel = 1; }
+message HistoryRemoveApiResponse { Error error = 1; }
+
+message SubscribeApiRequest { string user = 1; string channel = 2; }
+message SubscribeApiResponse { Error error = 1; }
+
+message UnsubscribeApiRequest { string user = 1; string channel = 2; }
+message UnsubscribeApiResponse { Error error = 1; }
+
+message DisconnectApiRequest { string user = 1; string client = 2; uint32 code = 3; string reason = 4; }
+message DisconnectApiResponse { Error error = 1; }
+
+message UserOnlineApiRequest { string user = 1; }
+message UserOnlineApiResponse { Error error = 1; bool online = 2; uint32 num_connections = 3; }
+
+message ChannelsApiRequest { string pattern = 1; }
+message ChannelsApiResponse { Error error = 1; repeated string channels = 2; }
+
+message InfoApiRequest {}
+message InfoApiResponse { Error error = 1; repeated NodeInfo nodes = 2; }
+message NodeInfo {
+  string name = 1; uint32 num_clients = 2; uint32 num_channels = 3; uint64 uptime_s = 4;
+}
+
+message BatchApiRequest { repeated Command commands = 1; }   // переиспользуем клиентские команды
+message BatchApiResponse { repeated Reply replies = 1; }

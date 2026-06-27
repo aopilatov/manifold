@@ -1,0 +1,19 @@
+[package]
+name = "socket-core"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+socket-protocol = { workspace = true }
+socket-broker = { workspace = true }
+tokio = { workspace = true }
+serde = { workspace = true }
+toml = { workspace = true }
+dashmap = { workspace = true }
+jsonwebtoken = { workspace = true }
+async-trait = { workspace = true }
+tracing = { workspace = true }
+thiserror = { workspace = true }
+anyhow = { workspace = true }
+humantime-serde = { workspace = true }
