@@ -15,6 +15,8 @@ socket-broker = { workspace = true }
 socket-core = { workspace = true }
 tokio = { workspace = true }
 axum = { workspace = true }
+prost = { workspace = true }
+futures = { workspace = true }
 tower = { workspace = true }
 tower-http = { workspace = true }
 tonic = { workspace = true }

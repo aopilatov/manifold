@@ -2,10 +2,12 @@
 //!
 //! Токены выдаёт ВНЕШНИЙ бэкенд — движок только проверяет подпись и матчит каналы.
 
+use crate::config::Jwt;
+use jsonwebtoken::{decode, Algorithm, DecodingKey, Validation};
 use serde::Deserialize;
 
 /// Claims connection JWT. Поле `channels` — список разрешённых glob-паттернов с правами.
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Clone, Deserialize)]
 pub struct Claims {
     pub sub: String,
     #[serde(default)]
@@ -14,12 +16,45 @@ pub struct Claims {
     pub channels: Vec<ChannelGrant>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Clone, Deserialize)]
 pub struct ChannelGrant {
     #[serde(rename = "match")]
     pub pattern: String,
     #[serde(default)]
     pub allow: Vec<String>, // "sub" | "pub" | "presence" | "history"
+}
+
+#[derive(Debug, thiserror::Error)]
+pub enum AuthError {
+    #[error("unsupported algorithm: {0}")]
+    UnsupportedAlg(String),
+    #[error("missing hmac_secret")]
+    MissingSecret,
+    #[error("invalid token: {0}")]
+    Invalid(String),
+}
+
+/// Проверка подписи connection JWT (этап 1: HMAC HS256/384/512; RSA/JWKS — TODO).
+pub fn validate_jwt(token: &str, cfg: &Jwt) -> Result<Claims, AuthError> {
+    let alg = match cfg.algorithm.as_str() {
+        "HS256" => Algorithm::HS256,
+        "HS384" => Algorithm::HS384,
+        "HS512" => Algorithm::HS512,
+        other => return Err(AuthError::UnsupportedAlg(other.into())),
+    };
+    let secret = cfg.hmac_secret.as_ref().ok_or(AuthError::MissingSecret)?;
+
+    let mut val = Validation::new(alg);
+    val.required_spec_claims.clear(); // exp не обязателен (вариант B: refresh по соединению)
+    match &cfg.audience {
+        Some(aud) => val.set_audience(&[aud]),
+        None => val.validate_aud = false,
+    }
+
+    let key = DecodingKey::from_secret(secret.as_bytes());
+    decode::<Claims>(token, &key, &val)
+        .map(|d| d.claims)
+        .map_err(|e| AuthError::Invalid(e.to_string()))
 }
 
 impl Claims {

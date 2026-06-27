@@ -1496,6 +1496,8 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "axum",
+ "futures",
+ "prost",
  "socket-broker",
  "socket-core",
  "socket-protocol",

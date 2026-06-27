@@ -43,8 +43,9 @@ just docs            # документация (docmd)
 
 ## Статус
 
-Каркас (скелет). Места реализации помечены `TODO(impl)`. Порядок сборки — см. план
-реализации в [`docs/architecture.md`](docs/architecture.md) (раздел 13).
+Этап 1 (ядро одной ноды) реализован и протестирован; остальное — скелет с `TODO`.
+Полный статус по этапам — [`docs/progress.md`](docs/progress.md). План реализации —
+[`docs/architecture.md`](docs/architecture.md) (раздел 13).
 
 ## Стек
 

@@ -10,6 +10,7 @@ export default {
   navigation: [
     { title: "Обзор", path: "/" },
     { title: "Архитектура", path: "/architecture" },
+    { title: "Прогресс", path: "/progress" },
     // TODO: автоген из proto/config → protocol.md, server-api.md, config-reference.md
   ],
 };

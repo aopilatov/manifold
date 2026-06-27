@@ -11,7 +11,7 @@ mod ws;
 use std::sync::Arc;
 
 use axum::{routing::get, Router};
-use socket_core::Config;
+use socket_core::{api::ApiService, hub::Hub, Config};
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
@@ -24,15 +24,17 @@ async fn main() -> anyhow::Result<()> {
     tracing::info!(node = %cfg.server.node_name, "socket-server запускается");
 
     let cfg = Arc::new(cfg);
+    let hub = Hub::new();
+    let api = Arc::new(ApiService::new(cfg.clone(), hub));
 
     // health/readiness на отдельном порту (раздел 12)
     let health_addr = cfg.server.health.listen.clone();
     let health = tokio::spawn(serve_health(health_addr));
 
-    // WS-транспорт (скелет)
+    // WS-транспорт (этап 1: коннект + подписки + локальный fan-out)
     let ws_addr = cfg.server.ws.listen.clone();
     let ws_path = cfg.server.ws.path.clone();
-    let ws_app = Router::new().route(&ws_path, get(ws::handler));
+    let ws_app = Router::new().route(&ws_path, get(ws::handler)).with_state(api.clone());
     let ws = tokio::spawn(async move {
         let listener = tokio::net::TcpListener::bind(&ws_addr).await.unwrap();
         tracing::info!(%ws_addr, "WS слушает");
