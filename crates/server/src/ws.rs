@@ -16,7 +16,9 @@ use socket_protocol::{command, reply, Command, Reply};
 use tokio::sync::mpsc;
 
 pub async fn handler(State(api): State<Arc<ApiService>>, ws: WebSocketUpgrade) -> Response {
-    ws.on_upgrade(move |socket| connection(api, socket))
+    // Согласование subprotocol: если клиент предложил socket.v1 — выбираем его (эхо в ответе).
+    ws.protocols(["socket.v1"])
+        .on_upgrade(move |socket| connection(api, socket))
 }
 
 async fn connection(api: Arc<ApiService>, socket: WebSocket) {

@@ -11,7 +11,7 @@ description: Статус реализации по этапам
 | # | Этап | Статус |
 |---|------|--------|
 | 1 | Ядро одной ноды (WS-коннект, JWT, sub/unsub по glob, in-memory hub) + health/shutdown | ✅ |
-| 2 | Клиентский SDK (`client-ts`): транспорт, реестр подписок, реконнект | ⬜ |
+| 2 | Клиентский SDK (`client-ts`): транспорт, реестр подписок, реконнект | ✅ |
 | 3 | Broker-абстракция + Redis → мультинода (pub/sub fan-out) + реестр нод | ⬜ |
 | 4 | SSE-транспорт (фолбэк) в сервере и SDK | ⬜ |
 | 5 | Server API (HTTP + gRPC), единый `ApiService`, идемпотентность, control-канал | ⬜ |
@@ -57,16 +57,39 @@ description: Статус реализации по этапам
 - `RefreshRequest` / `SubRefreshRequest` (вариант B)
 - graceful shutdown (SIGTERM → drain → `Disconnect{reconnect:true}`)
 
-**Известное ограничение:** реальный WS round-trip через сокет тестами не покрыт — `server` это
-bin-крейт без lib-таргета, `ws::handler` недоступен интеграционным тестам. Логику покрывают тесты
-через `ApiService`. План: при работе над SDK (этап 2) добавить серверу lib-таргет и e2e-тест по
-настоящему сокету.
+**Известное ограничение (снято на этапе 2):** реальный WS round-trip теперь покрыт e2e-тестом
+SDK↔сервер (`packages/client-ts/test/e2e.mjs`). Cargo-тесты ядра по-прежнему через `ApiService`.
 
 ---
 
-## Этап 2 — Клиентский SDK ⬜
+## Этап 2 — Клиентский SDK ✅
 
-_Не начат._ См. [архитектуру, раздел 11](/architecture).
+**Реализовано:**
+
+| Пакет | Что сделано |
+|---|---|
+| `packages/proto-gen` | protobuf-es типы сгенерированы из `proto/socket.proto` (buf), собираются в `dist` |
+| `packages/client-ts` | полный SDK: транспорт WS, кодек protobuf, корреляция Command↔Reply по id |
+
+**Возможности SDK** (`SocketClient` / `Subscription`):
+
+- Реестр подписок как источник истины; восстановление **всех подписок за 1 RTT** через `Connect.subs`.
+- Реконнект с джиттер-бэкоффом (`jitteredDelay`), переиспользование кэшированного JWT.
+- Recovery: `recover`/`position`, догон пропущенного, обновление позиции по `offset`.
+- Refresh токена по таймеру (вариант B), ping по `pingIntervalMs`.
+- API: `connect`, `newSubscription`, `sub.on(publication|join|leave|...)`, `subscribe`/`unsubscribe`/`publish`/`presence`.
+- Безопасный скип неизвестных push-вариантов (через `switch` по `case`).
+
+**Тесты:**
+
+- `test/backoff.test.ts` — границы и распределение джиттера (2 теста, ✔).
+- `test/e2e.mjs` — **живой round-trip против Rust-сервера**: connect → subscribe → publish →
+  приём `hello-e2e` → presence `[smoke-1]`. ✔
+
+**Побочно:** в сервере реализовано согласование WebSocket-subprotocol `socket.v1`
+(`ws.protocols([...])`) — часть `require_subprotocol`; без него undici-WebSocket рвал коннект.
+
+---
 
 ## Этап 3 — Redis-брокер / мультинода ⬜
 
