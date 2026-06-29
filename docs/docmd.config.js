@@ -12,7 +12,6 @@ export default {
   navigation: [
     { title: "Overview", path: "/" },
     { title: "Architecture", path: "/architecture" },
-    { title: "Progress", path: "/progress" },
     { title: "Protocol", path: "/protocol" },
     { title: "Server API", path: "/server-api" },
     { title: "Config reference", path: "/config-reference" },
