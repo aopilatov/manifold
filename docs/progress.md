@@ -17,7 +17,7 @@ description: Статус реализации по этапам
 | 5 | Server API (HTTP + gRPC), единый `ApiService`, идемпотентность, control-канал | ✅ |
 | 6 | Presence (join/leave, список онлайн, TTL) | ✅ |
 | 7 | История + recovery (Redis Streams, offset/epoch) | ✅ |
-| 8 | События жизненного цикла + observability (Prometheus, tracing) | ⬜ |
+| 8 | События жизненного цикла + observability (Prometheus, tracing) | ✅ |
 | 9 | Admin UI (Mantine) + `$metrics` + Prometheus | ⬜ |
 | 10 | Docs (docmd) + автоген из `.proto`/config | 🚧 |
 
@@ -195,8 +195,30 @@ gRPC-методы `subscribe`/`batch`/`publish_stream`/`history_remove` — за
 
 ---
 
-## Этап 8 — События жизненного цикла + observability ⬜
+## Этап 8 — События жизненного цикла + observability ✅
 
-_Не начат._ См. [архитектуру, раздел 12](/architecture). (Lua-публикация INCR+XADD+PUBLISH, ленивая
+**События жизненного цикла** (`[events]`): `connected`/`disconnected`/`subscribed`/`unsubscribed`
+→ прикладной бэкенд (НЕ авторизация). За трейтом `EventSink` (core), HTTP-реализация
+`HttpEventSink` (server, reqwest, fire-and-forget POST, фильтр по типам).
+
+**Observability:**
+
+- **Prometheus** `/metrics` (на health-порту): `socket_connections`, `socket_channels` (gauge),
+  `socket_messages_published_total`, `socket_subscriptions_total`,
+  `socket_connections_opened/closed_total` (counter). Счётчики — атомарные в `core/metrics.rs`,
+  без зависимости от Prometheus; экспозиция формируется в server.
+- **JSON-логи** — по `[telemetry].log_format = "json"`.
+
+**Тест:** `test/e2e_events.mjs` — приёмник вебхуков + клиент (connect→subscribe→unsubscribe→
+disconnect): получены все 4 события, `/metrics` содержит счётчики. ✔
+
+**Упрощения (TODO):** OTLP-трейсинг (`tracing_enabled`/`otlp_endpoint`) не подключён — тяжёлые
+зависимости, отложено; события — per-event POST (без батчинга/ретраев).
+
+---
+
+## Этап 9 — Admin UI ⬜
+
+_Не начат._ См. [архитектуру, раздел 9](/architecture). Каркас `web/` (Mantine) уже есть. (Lua-публикация INCR+XADD+PUBLISH, ленивая
 SUBSCRIBE/UNSUBSCRIBE, XRANGE recovery, presence-хэш с TTL, control pub/sub, idempotency).
 Перенести историю/presence из in-memory hub в брокер.

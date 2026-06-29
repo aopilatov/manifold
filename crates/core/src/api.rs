@@ -15,7 +15,9 @@ use tokio::sync::mpsc;
 
 use crate::auth::{self, Claims};
 use crate::config::Config;
+use crate::events::{EventSink, LifecycleEvent, NoopSink};
 use crate::hub::{join_push, leave_push, ConnHandle, Hub};
+use crate::metrics::Metrics;
 use crate::namespace::{self, Action, Decision};
 
 const RECOVER_LIMIT: usize = 100;
@@ -34,6 +36,8 @@ pub struct ApiService {
     pub cfg: Arc<Config>,
     pub hub: Arc<Hub>,
     pub broker: Arc<dyn Broker>,
+    pub metrics: Arc<Metrics>,
+    events: Arc<dyn EventSink>,
     node: String,
     counter: Arc<AtomicU64>,
 }
@@ -41,7 +45,30 @@ pub struct ApiService {
 impl ApiService {
     pub fn new(cfg: Arc<Config>, hub: Arc<Hub>, broker: Arc<dyn Broker>) -> Self {
         let node = cfg.server.node_name.clone();
-        Self { cfg, hub, broker, node, counter: Arc::new(AtomicU64::new(1)) }
+        Self {
+            cfg,
+            hub,
+            broker,
+            metrics: Arc::new(Metrics::default()),
+            events: Arc::new(NoopSink),
+            node,
+            counter: Arc::new(AtomicU64::new(1)),
+        }
+    }
+
+    /// Подключить sink событий жизненного цикла (по умолчанию — Noop).
+    pub fn set_event_sink(&mut self, sink: Arc<dyn EventSink>) {
+        self.events = sink;
+    }
+
+    fn emit_event(&self, kind: &str, user: &str, client: &str, channel: Option<String>) {
+        self.events.emit(LifecycleEvent {
+            kind: kind.to_string(),
+            node: self.node.clone(),
+            user: user.to_string(),
+            client: client.to_string(),
+            channel,
+        });
     }
 
     /// Удобный конструктор для одной ноды (MemoryBroker).
@@ -63,6 +90,7 @@ impl ApiService {
             id.clone(),
             ConnHandle { user_id: user, claims, tx, subs: HashSet::new() },
         );
+        Metrics::inc(&self.metrics.connections_opened);
         id
     }
 
@@ -75,6 +103,8 @@ impl ApiService {
                 subs.insert(channel.clone(), res);
             }
         }
+        let user = self.hub.connections.get(client_id).map(|c| c.user_id.clone()).unwrap_or_default();
+        self.emit_event("connected", &user, client_id, None);
         ConnectResult {
             client: client_id.to_string(),
             ping_interval_ms: self.cfg.server.ws.ping_interval.as_millis() as u32,
@@ -118,6 +148,10 @@ impl ApiService {
             (false, vec![], pos)
         };
 
+        Metrics::inc(&self.metrics.subscriptions);
+        let user = claims.as_ref().map(|c| c.sub.clone()).unwrap_or_default();
+        self.emit_event("subscribed", &user, client_id, Some(channel.clone()));
+
         Ok(SubscribeResult {
             recoverable,
             position: Some(position),
@@ -140,6 +174,9 @@ impl ApiService {
                 let _ = self.broker.broadcast(channel, leave_push(channel, info)).await;
             }
         }
+        Metrics::inc(&self.metrics.unsubscriptions);
+        let user = self.claims_of(client_id).map(|c| c.sub).unwrap_or_default();
+        self.emit_event("unsubscribed", &user, client_id, Some(channel.to_string()));
         UnsubscribeResult {}
     }
 
@@ -155,6 +192,7 @@ impl ApiService {
             .publish(channel, req.data.clone(), info, req.transient, ns.history_size)
             .await
             .map_err(broker_err)?;
+        Metrics::inc(&self.metrics.messages_published);
         Ok(PublishResult { position: Some(pos) })
     }
 
@@ -202,6 +240,8 @@ impl ApiService {
 
     pub async fn cleanup(&self, client_id: &str) {
         if let Some((_, conn)) = self.hub.connections.remove(client_id) {
+            Metrics::inc(&self.metrics.connections_closed);
+            self.emit_event("disconnected", &conn.user_id, client_id, None);
             let info = ClientInfo {
                 user: conn.user_id.clone(),
                 client: client_id.to_string(),
@@ -237,6 +277,7 @@ impl ApiService {
         }
         let ns = self.cfg.namespace(channel);
         let pos = self.broker.publish(channel, data, None, false, ns.history_size).await?;
+        Metrics::inc(&self.metrics.messages_published);
         if let Some(k) = idempotency_key {
             self.broker.idempotency_put(k, &pos, IDEMPOTENCY_TTL_SECS).await?;
         }

@@ -1,6 +1,7 @@
 //! Точка входа движка. Загружает конфиг, поднимает транспорты (WS/SSE), Server API (HTTP/gRPC),
 //! admin, health. Скелет: сейчас стартует health + WS-заглушку.
 
+mod events;
 mod grpc_api;
 mod health;
 mod http_api;
@@ -26,7 +27,8 @@ async fn main() -> anyhow::Result<()> {
     let cfg = Config::load(&config_path)
         .unwrap_or_else(|e| panic!("не удалось загрузить {config_path}: {e}"));
 
-    init_tracing(&cfg.server.log_level);
+    let json_logs = cfg.telemetry.log_format.as_deref() == Some("json");
+    init_tracing(&cfg.server.log_level, json_logs);
     tracing::info!(node = %cfg.server.node_name, "socket-server запускается");
 
     let cfg = Arc::new(cfg);
@@ -41,11 +43,24 @@ async fn main() -> anyhow::Result<()> {
         MemoryBroker::new(delivery)
     };
 
-    let api = Arc::new(ApiService::new(cfg.clone(), hub, broker));
+    let mut api = ApiService::new(cfg.clone(), hub, broker);
+    if cfg.events.enabled {
+        tracing::info!(endpoint = %cfg.events.endpoint, "события жизненного цикла → вебхук");
+        api.set_event_sink(Arc::new(events::HttpEventSink::new(
+            cfg.events.endpoint.clone(),
+            cfg.events.types.clone(),
+        )));
+    }
+    let api = Arc::new(api);
 
-    // health/readiness на отдельном порту (раздел 12)
+    // health/readiness/metrics на отдельном порту
     let health_addr = cfg.server.health.listen.clone();
-    let health = tokio::spawn(serve_health(health_addr));
+    let health_app = health::router(api.clone());
+    let health = tokio::spawn(async move {
+        let listener = tokio::net::TcpListener::bind(&health_addr).await.unwrap();
+        tracing::info!(%health_addr, "health/metrics слушает");
+        axum::serve(listener, health_app).await.unwrap();
+    });
 
     // WS + SSE на одном слушателе
     let ws_addr = cfg.server.ws.listen.clone();
@@ -91,18 +106,13 @@ async fn main() -> anyhow::Result<()> {
     Ok(())
 }
 
-async fn serve_health(addr: String) {
-    let app = Router::new()
-        .route("/health", get(health::liveness))
-        .route("/ready", get(health::readiness));
-    let listener = tokio::net::TcpListener::bind(&addr).await.unwrap();
-    tracing::info!(%addr, "health слушает");
-    axum::serve(listener, app).await.unwrap();
-}
-
-fn init_tracing(level: &str) {
+fn init_tracing(level: &str, json: bool) {
     use tracing_subscriber::{fmt, EnvFilter};
-    let filter = EnvFilter::try_from_default_env()
-        .unwrap_or_else(|_| EnvFilter::new(level));
-    fmt().with_env_filter(filter).init();
+    let filter = EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new(level));
+    let builder = fmt().with_env_filter(filter);
+    if json {
+        builder.json().init();
+    } else {
+        builder.init();
+    }
 }
