@@ -1,10 +1,12 @@
 {
   "name": "manifold-proto-gen",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "protobuf-es types generated from proto/manifold.proto (shared by client-ts and web)",
   "license": "MIT",
   "type": "module",
-  "publishConfig": { "access": "public" },
+  "publishConfig": {
+    "access": "public"
+  },
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "exports": {
@@ -13,7 +15,10 @@
       "default": "./dist/index.js"
     }
   },
-  "files": ["dist", "src"],
+  "files": [
+    "dist",
+    "src"
+  ],
   "scripts": {
     "generate": "buf generate ../../proto --template buf.gen.yaml",
     "build": "tsc -p tsconfig.json"

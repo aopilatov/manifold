@@ -1,10 +1,12 @@
 {
   "name": "manifold-client",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Engine client SDK: transport (WS/SSE), reconnect, subscription registry, recovery, protobuf",
   "license": "MIT",
   "type": "module",
-  "publishConfig": { "access": "public" },
+  "publishConfig": {
+    "access": "public"
+  },
   "main": "dist/index.js",
   "module": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -14,7 +16,10 @@
       "default": "./dist/index.js"
     }
   },
-  "files": ["dist", "src"],
+  "files": [
+    "dist",
+    "src"
+  ],
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "dev": "tsc -w -p tsconfig.json",
