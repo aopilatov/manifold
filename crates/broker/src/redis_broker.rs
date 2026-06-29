@@ -7,7 +7,7 @@
 //!   _Замечание:_ PSUBSCRIBE-all проще ленивой per-channel подписки; ленивость — оптимизация (TODO).
 //! - **presence**: ZSET `pz:{ch}` (score = expire_at) + HASH `ph:{ch}` (client → ClientInfo).
 
-use crate::{new_epoch, pub_push, unix_secs, Broker, BrokerError, Delivery, Recovered, Result};
+use crate::{new_epoch, pub_push, unix_secs, Broker, BrokerError, ControlCommand, Delivery, Recovered, Result};
 use async_trait::async_trait;
 use futures::StreamExt;
 use prost::Message as _;
@@ -41,14 +41,21 @@ impl RedisBroker {
 
         let pattern = format!("{prefix}:ch:*");
         let strip = format!("{prefix}:ch:");
+        let control = format!("{prefix}:control");
         let mut pubsub = client.get_async_pubsub().await?;
         pubsub.psubscribe(&pattern).await?;
+        pubsub.subscribe(&control).await?;
         tokio::spawn(async move {
             let mut stream = pubsub.on_message();
             while let Some(msg) = stream.next().await {
                 let full = msg.get_channel_name().to_string();
-                let logical = full.strip_prefix(&strip).unwrap_or(&full).to_string();
-                if let Ok(payload) = msg.get_payload::<Vec<u8>>() {
+                let Ok(payload) = msg.get_payload::<Vec<u8>>() else { continue };
+                if full == control {
+                    if let Ok(cmd) = serde_json::from_slice::<ControlCommand>(&payload) {
+                        delivery.control(cmd);
+                    }
+                } else {
+                    let logical = full.strip_prefix(&strip).unwrap_or(&full).to_string();
                     if let Ok(reply) = Reply::decode(payload.as_slice()) {
                         delivery.deliver(&logical, reply);
                     }
@@ -217,6 +224,29 @@ impl Broker for RedisBroker {
             }
         }
         Ok(out)
+    }
+
+    async fn idempotency_get(&self, key: &str) -> Result<Option<StreamPosition>> {
+        let mut c = self.conn.clone();
+        let v: Option<String> = c.get(self.key("idem", key)).await?;
+        Ok(v.and_then(|s| {
+            let (o, e) = s.split_once(':')?;
+            Some(StreamPosition { offset: o.parse().ok()?, epoch: e.to_string() })
+        }))
+    }
+
+    async fn idempotency_put(&self, key: &str, pos: &StreamPosition, ttl_secs: u64) -> Result<()> {
+        let mut c = self.conn.clone();
+        let val = format!("{}:{}", pos.offset, pos.epoch);
+        let _: () = c.set_ex(self.key("idem", key), val, ttl_secs.max(1)).await?;
+        Ok(())
+    }
+
+    async fn control_publish(&self, cmd: &ControlCommand) -> Result<()> {
+        let mut c = self.conn.clone();
+        let payload = serde_json::to_vec(cmd).map_err(|e| BrokerError::Decode(e.to_string()))?;
+        let _: () = c.publish(format!("{}:control", self.prefix), payload).await?;
+        Ok(())
     }
 }
 

@@ -1,7 +1,9 @@
 //! Точка входа движка. Загружает конфиг, поднимает транспорты (WS/SSE), Server API (HTTP/gRPC),
 //! admin, health. Скелет: сейчас стартует health + WS-заглушку.
 
+mod grpc_api;
 mod health;
+mod http_api;
 mod sse;
 mod ws;
 // mod http_api;  // TODO(impl): Server API (HTTP/JSON)
@@ -62,8 +64,30 @@ async fn main() -> anyhow::Result<()> {
         axum::serve(listener, ws_app).await.unwrap();
     });
 
-    // TODO(impl): http_api, grpc_api, admin, graceful shutdown (SIGTERM → drain).
-    let _ = tokio::try_join!(health, ws);
+    // Server API — HTTP/JSON
+    let http_addr = cfg.server.http_api.listen.clone();
+    let http_app = http_api::router(api.clone());
+    let http = tokio::spawn(async move {
+        let listener = tokio::net::TcpListener::bind(&http_addr).await.unwrap();
+        tracing::info!(%http_addr, "HTTP Server API слушает");
+        axum::serve(listener, http_app).await.unwrap();
+    });
+
+    // Server API — gRPC
+    let grpc_addr: std::net::SocketAddr =
+        cfg.server.grpc_api.listen.parse().expect("неверный grpc_api.listen");
+    let grpc_impl = grpc_api::GrpcApi { api: api.clone() };
+    let grpc = tokio::spawn(async move {
+        tracing::info!(%grpc_addr, "gRPC Server API слушает");
+        tonic::transport::Server::builder()
+            .add_service(socket_protocol::server_api_server::ServerApiServer::new(grpc_impl))
+            .serve(grpc_addr)
+            .await
+            .unwrap();
+    });
+
+    // TODO(impl): admin, graceful shutdown (SIGTERM → drain).
+    let _ = tokio::try_join!(health, ws, http, grpc);
     Ok(())
 }
 

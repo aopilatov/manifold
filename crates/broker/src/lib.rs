@@ -8,6 +8,7 @@
 //! а зовёт колбэк (core реализует его поверх hub).
 
 use async_trait::async_trait;
+use serde::{Deserialize, Serialize};
 use socket_protocol::{push, reply, ClientInfo, Publication, Push, Reply, StreamPosition};
 use std::collections::HashMap;
 use std::time::{SystemTime, UNIX_EPOCH};
@@ -34,10 +35,19 @@ pub struct Recovered {
     pub position: StreamPosition,
 }
 
+/// Адресные команды между нодами (Server API → нода-владелец соединения).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub enum ControlCommand {
+    Disconnect { user: String, client: String, code: u32, reason: String },
+    Unsubscribe { user: String, channel: String },
+}
+
 /// Куда брокер отдаёт пришедшие (в т.ч. с других нод) сообщения — локальным подписчикам.
 /// Реализуется в core поверх hub.
 pub trait Delivery: Send + Sync {
     fn deliver(&self, channel: &str, reply: Reply);
+    /// Control-команда с любой ноды: выполнить, если соединение локальное.
+    fn control(&self, cmd: ControlCommand);
 }
 
 #[async_trait]
@@ -64,6 +74,13 @@ pub trait Broker: Send + Sync {
     async fn presence_add(&self, channel: &str, client: &str, info: ClientInfo, ttl_secs: u64) -> Result<()>;
     async fn presence_remove(&self, channel: &str, client: &str) -> Result<()>;
     async fn presence_list(&self, channel: &str) -> Result<HashMap<String, ClientInfo>>;
+
+    /// Идемпотентность Server API: вернуть закэшированную позицию по ключу (если была).
+    async fn idempotency_get(&self, key: &str) -> Result<Option<StreamPosition>>;
+    async fn idempotency_put(&self, key: &str, pos: &StreamPosition, ttl_secs: u64) -> Result<()>;
+
+    /// Разослать control-команду всем нодам (нода-владелец соединения её выполнит).
+    async fn control_publish(&self, cmd: &ControlCommand) -> Result<()>;
 }
 
 /// Построить Push-Reply с публикацией (`id = 0`).

@@ -3,7 +3,7 @@
 
 use crate::auth::Claims;
 use dashmap::DashMap;
-use socket_protocol::{push, reply, ClientInfo, Join, Leave, Push, Reply};
+use socket_protocol::{push, reply, ClientInfo, Disconnect, Join, Leave, Push, Reply, Unsubscribe};
 use std::collections::HashSet;
 use std::sync::Arc;
 use tokio::sync::mpsc;
@@ -67,6 +67,55 @@ impl Hub {
     pub fn num_channels(&self) -> usize {
         self.channels.len()
     }
+
+    pub fn num_connections(&self) -> usize {
+        self.connections.len()
+    }
+
+    /// Сколько локальных соединений у юзера.
+    pub fn user_connection_count(&self, user: &str) -> usize {
+        self.connections.iter().filter(|e| e.user_id == user).count()
+    }
+
+    /// Список активных каналов (локально), опц. фильтр по точному совпадению префикса.
+    pub fn channels_list(&self) -> Vec<String> {
+        self.channels.iter().map(|e| e.key().clone()).collect()
+    }
+
+    /// Принудительно отключить соединения, совпадающие по user и/или client (control-команда).
+    pub fn disconnect_matching(&self, user: &str, client: &str, code: u32, reason: &str) {
+        let ids: Vec<ClientId> = self
+            .connections
+            .iter()
+            .filter(|e| (client.is_empty() || e.key() == client) && (user.is_empty() || e.user_id == user))
+            .map(|e| e.key().clone())
+            .collect();
+        for id in ids {
+            if let Some((_, conn)) = self.connections.remove(&id) {
+                let _ = conn.tx.try_send(disconnect_push(code, reason));
+                for channel in &conn.subs {
+                    self.remove_sub(channel, &id);
+                }
+            }
+        }
+    }
+
+    /// Принудительно отписать соединения юзера от канала (control-команда).
+    pub fn unsubscribe_matching(&self, user: &str, channel: &str) {
+        let ids: Vec<ClientId> = self
+            .connections
+            .iter()
+            .filter(|e| (user.is_empty() || e.user_id == user) && e.subs.contains(channel))
+            .map(|e| e.key().clone())
+            .collect();
+        for id in ids {
+            self.remove_sub(channel, &id);
+            if let Some(mut conn) = self.connections.get_mut(&id) {
+                conn.subs.remove(channel);
+                let _ = conn.tx.try_send(unsubscribe_push(channel));
+            }
+        }
+    }
 }
 
 fn push_reply(channel: &str, event: push::Event) -> Reply {
@@ -86,4 +135,15 @@ pub fn join_push(channel: &str, info: ClientInfo) -> Reply {
 
 pub fn leave_push(channel: &str, info: ClientInfo) -> Reply {
     push_reply(channel, push::Event::Leave(Leave { info: Some(info) }))
+}
+
+pub fn disconnect_push(code: u32, reason: &str) -> Reply {
+    push_reply(
+        "",
+        push::Event::Disconnect(Disconnect { code, reason: reason.to_string(), reconnect: false }),
+    )
+}
+
+pub fn unsubscribe_push(channel: &str) -> Reply {
+    push_reply(channel, push::Event::Unsubscribe(Unsubscribe { code: 0, reason: String::new() }))
 }

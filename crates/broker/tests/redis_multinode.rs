@@ -4,7 +4,7 @@
 use std::sync::Arc;
 use std::time::Duration;
 
-use socket_broker::{Broker, Delivery, RedisBroker};
+use socket_broker::{Broker, ControlCommand, Delivery, RedisBroker};
 use socket_protocol::{push, reply, ClientInfo, Reply};
 use tokio::sync::mpsc::{unbounded_channel, UnboundedReceiver, UnboundedSender};
 
@@ -17,6 +17,7 @@ impl Delivery for ChanDelivery {
     fn deliver(&self, channel: &str, reply: Reply) {
         let _ = self.tx.send((channel.to_string(), reply));
     }
+    fn control(&self, _cmd: ControlCommand) {}
 }
 
 fn pub_data(reply: &Reply) -> Option<Vec<u8>> {

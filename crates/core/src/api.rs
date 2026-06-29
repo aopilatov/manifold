@@ -1,12 +1,13 @@
 //! Единый оркестратор клиентских команд. Состояние каналов — в брокере (одна нода: Memory,
 //! мультинода: Redis). Hub — только локальная маршрутизация.
 
-use socket_broker::Broker;
+use socket_broker::{Broker, BrokerError, ControlCommand};
 use socket_protocol::{
     command, reply, ClientInfo, Command, ConnectRequest, ConnectResult, Error, HistoryRequest,
-    HistoryResult, PongResult, PresenceResult, PublishRequest, PublishResult, Reply,
+    HistoryResult, PongResult, PresenceResult, Publication, PublishRequest, PublishResult, Reply,
     StreamPosition, SubscribeRequest, SubscribeResult, UnsubscribeResult,
 };
+use std::collections::BTreeMap;
 use std::collections::{HashMap, HashSet};
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
@@ -19,6 +20,14 @@ use crate::namespace::{self, Action, Decision};
 
 const RECOVER_LIMIT: usize = 100;
 const PRESENCE_TTL_SECS: u64 = 60;
+const IDEMPOTENCY_TTL_SECS: u64 = 300;
+
+/// Сводка по ноде для Server API `info`.
+pub struct NodeStats {
+    pub node: String,
+    pub num_connections: usize,
+    pub num_channels: usize,
+}
 
 #[derive(Clone)]
 pub struct ApiService {
@@ -210,6 +219,94 @@ impl ApiService {
                 }
             }
         }
+    }
+
+    // ─────────── Server API (доверенный; авторизация — на уровне HTTP/gRPC) ───────────
+
+    /// Публикация из бэкенда. Идемпотентна при наличии ключа.
+    pub async fn api_publish(
+        &self,
+        channel: &str,
+        data: Vec<u8>,
+        idempotency_key: Option<&str>,
+    ) -> Result<StreamPosition, BrokerError> {
+        if let Some(k) = idempotency_key {
+            if let Some(pos) = self.broker.idempotency_get(k).await? {
+                return Ok(pos);
+            }
+        }
+        let ns = self.cfg.namespace(channel);
+        let pos = self.broker.publish(channel, data, None, false, ns.history_size).await?;
+        if let Some(k) = idempotency_key {
+            self.broker.idempotency_put(k, &pos, IDEMPOTENCY_TTL_SECS).await?;
+        }
+        Ok(pos)
+    }
+
+    /// Одно сообщение в несколько каналов.
+    pub async fn api_broadcast(&self, channels: &[String], data: Vec<u8>) -> BTreeMap<String, u64> {
+        let mut out = BTreeMap::new();
+        for ch in channels {
+            if let Ok(pos) = self.api_publish(ch, data.clone(), None).await {
+                out.insert(ch.clone(), pos.offset);
+            }
+        }
+        out
+    }
+
+    pub async fn api_presence(&self, channel: &str) -> Result<std::collections::HashMap<String, ClientInfo>, BrokerError> {
+        self.broker.presence_list(channel).await
+    }
+
+    pub async fn api_history(&self, channel: &str, limit: usize) -> Result<(Vec<Publication>, StreamPosition), BrokerError> {
+        let r = self.broker.recover(channel, &StreamPosition::default(), limit).await?;
+        Ok((r.publications, r.position))
+    }
+
+    /// Активные каналы этой ноды (опц. glob-фильтр).
+    pub fn api_channels(&self, pattern: Option<&str>) -> Vec<String> {
+        let all = self.hub.channels_list();
+        match pattern {
+            Some(p) if !p.is_empty() => all.into_iter().filter(|c| auth::glob_match(p, c)).collect(),
+            _ => all,
+        }
+    }
+
+    pub fn api_info(&self) -> NodeStats {
+        NodeStats {
+            node: self.node.clone(),
+            num_connections: self.hub.num_connections(),
+            num_channels: self.hub.num_channels(),
+        }
+    }
+
+    /// Принудительный дисконнект (по кластеру через control-канал).
+    pub async fn api_disconnect(&self, user: &str, client: &str, code: u32, reason: &str) {
+        let _ = self
+            .broker
+            .control_publish(&ControlCommand::Disconnect {
+                user: user.to_string(),
+                client: client.to_string(),
+                code,
+                reason: reason.to_string(),
+            })
+            .await;
+    }
+
+    pub async fn api_unsubscribe(&self, user: &str, channel: &str) {
+        let _ = self
+            .broker
+            .control_publish(&ControlCommand::Unsubscribe {
+                user: user.to_string(),
+                channel: channel.to_string(),
+            })
+            .await;
+    }
+
+    /// Онлайн ли юзер (локально на этой ноде). Кластерная агрегация — TODO (реестр нод).
+    pub fn api_user_online(&self, user: &str) -> (bool, usize) {
+        let n = self.hub.user_connection_count(user);
+        (n > 0, n)
     }
 
     // --- helpers ---

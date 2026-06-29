@@ -1,7 +1,7 @@
 //! In-memory брокер (одна нода). Хранит offset/epoch/историю/presence в памяти, fan-out —
 //! сразу через [`Delivery`].
 
-use crate::{new_epoch, pub_push, Broker, Delivery, Recovered, Result};
+use crate::{new_epoch, pub_push, Broker, ControlCommand, Delivery, Recovered, Result};
 use async_trait::async_trait;
 use dashmap::DashMap;
 use socket_protocol::{ClientInfo, Publication, Reply, StreamPosition};
@@ -24,11 +24,12 @@ impl State {
 pub struct MemoryBroker {
     delivery: Arc<dyn Delivery>,
     states: DashMap<String, State>,
+    idempotency: DashMap<String, StreamPosition>,
 }
 
 impl MemoryBroker {
     pub fn new(delivery: Arc<dyn Delivery>) -> Arc<Self> {
-        Arc::new(Self { delivery, states: DashMap::new() })
+        Arc::new(Self { delivery, states: DashMap::new(), idempotency: DashMap::new() })
     }
 }
 
@@ -113,5 +114,20 @@ impl Broker for MemoryBroker {
 
     async fn presence_list(&self, channel: &str) -> Result<HashMap<String, ClientInfo>> {
         Ok(self.states.get(channel).map(|st| st.presence.clone()).unwrap_or_default())
+    }
+
+    async fn idempotency_get(&self, key: &str) -> Result<Option<StreamPosition>> {
+        Ok(self.idempotency.get(key).map(|v| v.clone()))
+    }
+
+    async fn idempotency_put(&self, key: &str, pos: &StreamPosition, _ttl: u64) -> Result<()> {
+        self.idempotency.insert(key.to_string(), pos.clone());
+        Ok(())
+    }
+
+    async fn control_publish(&self, cmd: &ControlCommand) -> Result<()> {
+        // одна нода — выполняем сразу
+        self.delivery.control(cmd.clone());
+        Ok(())
     }
 }
