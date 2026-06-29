@@ -2,15 +2,18 @@
 //! admin, health. Скелет: сейчас стартует health + WS-заглушку.
 
 mod health;
+mod sse;
 mod ws;
-// mod sse;       // TODO(impl): SSE-транспорт
 // mod http_api;  // TODO(impl): Server API (HTTP/JSON)
 // mod grpc_api;  // TODO(impl): Server API (gRPC/tonic)
 // mod admin;     // TODO(impl): admin UI + сессии
 
 use std::sync::Arc;
 
-use axum::{routing::get, Router};
+use axum::{
+    routing::{get, post},
+    Router,
+};
 use socket_broker::{Broker, MemoryBroker, RedisBroker};
 use socket_core::{api::ApiService, delivery::HubDelivery, hub::Hub, Config};
 
@@ -42,10 +45,17 @@ async fn main() -> anyhow::Result<()> {
     let health_addr = cfg.server.health.listen.clone();
     let health = tokio::spawn(serve_health(health_addr));
 
-    // WS-транспорт (этап 1: коннект + подписки + локальный fan-out)
+    // WS + SSE на одном слушателе
     let ws_addr = cfg.server.ws.listen.clone();
     let ws_path = cfg.server.ws.path.clone();
-    let ws_app = Router::new().route(&ws_path, get(ws::handler)).with_state(api.clone());
+    let mut ws_app = Router::new().route(&ws_path, get(ws::handler));
+    if cfg.server.sse.enabled {
+        tracing::info!("SSE-фолбэк включён");
+        ws_app = ws_app
+            .route(&cfg.server.sse.path, get(sse::stream))
+            .route(&cfg.server.sse.emit_path, post(sse::emit));
+    }
+    let ws_app = ws_app.with_state(api.clone());
     let ws = tokio::spawn(async move {
         let listener = tokio::net::TcpListener::bind(&ws_addr).await.unwrap();
         tracing::info!(%ws_addr, "WS слушает");

@@ -17,6 +17,9 @@ tokio = { workspace = true }
 axum = { workspace = true }
 prost = { workspace = true }
 futures = { workspace = true }
+tokio-stream = "0.1"
+async-stream = "0.3"
+base64 = "0.22"
 tower = { workspace = true }
 tower-http = { workspace = true }
 tonic = { workspace = true }

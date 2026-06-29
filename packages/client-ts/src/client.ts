@@ -1,6 +1,6 @@
-// SocketClient — клиентский SDK (этап 2). Транспорт WebSocket, корреляция Command↔Reply по id,
-// реестр подписок (источник истины), реконнект с джиттером, восстановление подписок за 1 RTT,
-// recovery по offset/epoch, refresh токена (вариант B), ping.
+// SocketClient — клиентский SDK. Транспорт-агностичен (WS/SSE), корреляция Command↔Reply по id,
+// реестр подписок (источник истины), реконнект с джиттером, восстановление подписок, recovery,
+// refresh токена (вариант B), ping.
 
 import { create } from "@bufbuild/protobuf";
 import {
@@ -14,15 +14,15 @@ import {
   type SubscribeResult,
 } from "@socket/proto-gen";
 import { jitteredDelay } from "./backoff.js";
-import { decodeReply, encodeCommand } from "./codec.js";
+import { encodeCommand } from "./codec.js";
+import { makeTransport, type Transport } from "./transport.js";
 
 export interface SocketOptions {
   url: string;
-  /** Колбэк за connection JWT (источник — внешний бэкенд). */
   getToken: () => Promise<string>;
-  /** Колбэк за sub-токеном приватного канала. */
   getSubToken?: (channel: string) => Promise<string>;
-  /** Таймаут ожидания ответа на команду, мс. */
+  /** Транспорт: ws (дефолт) | sse (фолбэк). */
+  transport?: "ws" | "sse";
   requestTimeout?: number;
 }
 
@@ -42,10 +42,8 @@ class Emitter {
 }
 
 export class Subscription extends Emitter {
-  /** Последняя позиция в потоке — для recovery при реконнекте. */
   position?: StreamPosition;
   subToken?: string;
-  private subscribed = false;
 
   constructor(private client: SocketClient, readonly channel: string) {
     super();
@@ -57,35 +55,24 @@ export class Subscription extends Emitter {
     }
     const res = (await this.client._send({
       case: "subscribe",
-      value: {
-        channel: this.channel,
-        recover: !!this.position,
-        position: this.position,
-        token: this.subToken ?? "",
-      },
+      value: { channel: this.channel, recover: !!this.position, position: this.position, token: this.subToken ?? "" },
     })) as SubscribeResult;
     this.applySubscribeResult(res);
-    this.subscribed = true;
     this.emit("subscribed", res);
   }
 
   applySubscribeResult(res: SubscribeResult): void {
     if (res.position) this.position = res.position;
-    // догон пропущенного (recovery)
     for (const pub of res.publications) this.deliver(pub);
   }
 
   async unsubscribe(): Promise<void> {
     await this.client._send({ case: "unsubscribe", value: { channel: this.channel } });
-    this.subscribed = false;
     this.emit("unsubscribed");
   }
 
   async publish(data: Uint8Array, transient = false): Promise<void> {
-    await this.client._send({
-      case: "publish",
-      value: { channel: this.channel, data, transient },
-    });
+    await this.client._send({ case: "publish", value: { channel: this.channel, data, transient } });
   }
 
   async presence(): Promise<Record<string, any>> {
@@ -93,24 +80,19 @@ export class Subscription extends Emitter {
     return res.presence ?? {};
   }
 
-  /** Доставить публикацию подписчику + обновить позицию (для recovery). */
   deliver(pub: Publication): void {
     if (this.position && pub.offset > 0n) this.position = { ...this.position, offset: pub.offset };
     this.emit("publication", pub);
   }
 }
 
-type ClientState = "disconnected" | "connecting" | "connected";
-
 export class SocketClient extends Emitter {
   readonly options: SocketOptions;
-  private ws?: WebSocket;
+  private transport?: Transport;
   private token?: string;
   private nextId = 1;
   private pending = new Map<number, Pending>();
-  /** Реестр подписок — источник истины для реконнекта. */
   private subs = new Map<string, Subscription>();
-  private state: ClientState = "disconnected";
   private attempt = 0;
   private explicitClose = false;
   private pingTimer: any;
@@ -138,49 +120,35 @@ export class SocketClient extends Emitter {
   disconnect(): void {
     this.explicitClose = true;
     this.clearTimers();
-    this.ws?.close();
-    this.state = "disconnected";
+    this.transport?.close();
   }
 
-  // --- внутреннее ---
-
   private async open(): Promise<ConnectResult> {
-    this.state = "connecting";
     this.token = await this.options.getToken();
+    const transport = makeTransport(this.options.transport ?? "ws", this.options.url);
+    this.transport = transport;
+    transport.onReply((r) => this.onReply(r));
+    transport.onClose(() => this.onClose());
 
-    const ws = new WebSocket(this.options.url, "socket.v1");
-    ws.binaryType = "arraybuffer";
-    this.ws = ws;
+    const established = await transport.open(this.token);
 
-    await new Promise<void>((resolve, reject) => {
-      ws.onopen = () => resolve();
-      ws.onerror = (e) => reject(e);
-    });
-    ws.onmessage = (ev) => this.onMessage(ev as MessageEvent);
-    ws.onclose = () => this.onClose();
-
-    // восстановление всех подписок за 1 RTT
-    const subsInit: Record<string, any> = {};
-    for (const [ch, sub] of this.subs) {
-      subsInit[ch] = {
-        channel: ch,
-        recover: !!sub.position,
-        position: sub.position,
-        token: sub.subToken ?? "",
-      };
+    let res: ConnectResult;
+    if (established) {
+      // SSE: коннект выполнил GET; подписки восстанавливаем индивидуально
+      res = established;
+      for (const sub of this.subs.values()) this.resubscribe(sub);
+    } else {
+      // WS: шлём Connect-команду с батч-восстановлением подписок (1 RTT)
+      const subsInit: Record<string, any> = {};
+      for (const [ch, sub] of this.subs) {
+        subsInit[ch] = { channel: ch, recover: !!sub.position, position: sub.position, token: sub.subToken ?? "" };
+      }
+      res = (await this._send({ case: "connect", value: { token: this.token, subs: subsInit, protocolVersion: 1 } })) as ConnectResult;
+      for (const [ch, subRes] of Object.entries(res.subs ?? {})) {
+        this.subs.get(ch)?.applySubscribeResult(subRes as SubscribeResult);
+      }
     }
 
-    const res = (await this._send({
-      case: "connect",
-      value: { token: this.token, subs: subsInit, protocolVersion: 1 },
-    })) as ConnectResult;
-
-    // применить результаты восстановленных подписок
-    for (const [ch, subRes] of Object.entries(res.subs ?? {})) {
-      this.subs.get(ch)?.applySubscribeResult(subRes as SubscribeResult);
-    }
-
-    this.state = "connected";
     this.attempt = 0;
     this.schedulePing(res.pingIntervalMs);
     this.scheduleRefresh(res.expiresInS);
@@ -188,40 +156,46 @@ export class SocketClient extends Emitter {
     return res;
   }
 
-  /** Отправить команду и дождаться Reply (корреляция по id). */
+  private resubscribe(sub: Subscription): void {
+    this._send({
+      case: "subscribe",
+      value: { channel: sub.channel, recover: !!sub.position, position: sub.position, token: sub.subToken ?? "" },
+    })
+      .then((res) => sub.applySubscribeResult(res as SubscribeResult))
+      .catch(() => {});
+  }
+
   _send(method: any): Promise<any> {
     const id = this.nextId++;
     const cmd = create(CommandSchema, { id, method });
     return new Promise((resolve, reject) => {
-      if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
-        reject(new Error("not connected"));
-        return;
-      }
       const timer = setTimeout(() => {
         this.pending.delete(id);
         reject(new Error("request timeout"));
       }, this.options.requestTimeout ?? 10_000);
       this.pending.set(id, { resolve, reject, timer });
-      this.ws.send(encodeCommand(cmd));
+      try {
+        if (!this.transport) throw new Error("not connected");
+        this.transport.send(encodeCommand(cmd));
+      } catch (e) {
+        clearTimeout(timer);
+        this.pending.delete(id);
+        reject(e);
+      }
     });
   }
 
-  private onMessage(ev: MessageEvent): void {
-    const reply = decodeReply(new Uint8Array(ev.data as ArrayBuffer));
+  private onReply(reply: Reply): void {
     if (reply.id !== 0) {
-      this.resolvePending(reply);
+      const p = this.pending.get(reply.id);
+      if (!p) return;
+      this.pending.delete(reply.id);
+      clearTimeout(p.timer);
+      if (reply.error) p.reject(asError(reply.error));
+      else p.resolve(reply.payload?.value);
       return;
     }
     if (reply.payload?.case === "push") this.routePush(reply.payload.value as Push);
-  }
-
-  private resolvePending(reply: Reply): void {
-    const p = this.pending.get(reply.id);
-    if (!p) return;
-    this.pending.delete(reply.id);
-    clearTimeout(p.timer);
-    if (reply.error) p.reject(asError(reply.error));
-    else p.resolve(reply.payload?.value);
   }
 
   private routePush(push: Push): void {
@@ -242,42 +216,37 @@ export class SocketClient extends Emitter {
         sub?.emit("unsubscribed", ev.value);
         break;
       case "disconnect":
-        // сервер закрывает соединение; reconnect решит onClose по флагу
-        this.ws?.close();
+        this.transport?.close();
         break;
+      // неизвестные варианты безопасно игнорируются (версионирование)
     }
   }
 
   private onClose(): void {
     this.clearTimers();
     this.failPending();
-    this.state = "disconnected";
     this.emit("disconnected");
     if (this.explicitClose) return;
     const delay = jitteredDelay(this.attempt++);
-    setTimeout(() => {
-      this.open().catch(() => {
-        /* следующий onClose снова запланирует реконнект */
-      });
-    }, delay);
+    setTimeout(() => this.open().catch(() => {}), delay);
   }
 
   private schedulePing(intervalMs: number): void {
     if (!intervalMs) return;
     this.pingTimer = setInterval(() => {
-      this._send({ case: "ping", value: {} }).catch(() => this.ws?.close());
+      this._send({ case: "ping", value: {} }).catch(() => this.transport?.close());
     }, intervalMs);
   }
 
   private scheduleRefresh(expiresInS: number): void {
     if (!expiresInS) return;
-    const ms = Math.max(1_000, expiresInS * 1000 * 0.8); // обновить заранее
+    const ms = Math.max(1_000, expiresInS * 1000 * 0.8);
     this.refreshTimer = setTimeout(async () => {
       try {
         this.token = await this.options.getToken();
         await this._send({ case: "refresh", value: { token: this.token } });
       } catch {
-        this.ws?.close();
+        this.transport?.close();
       }
     }, ms);
   }

@@ -1497,13 +1497,16 @@ name = "socket-server"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "async-stream",
  "axum",
+ "base64",
  "futures",
  "prost",
  "socket-broker",
  "socket-core",
  "socket-protocol",
  "tokio",
+ "tokio-stream",
  "tonic",
  "tower 0.5.3",
  "tower-http",
