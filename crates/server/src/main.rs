@@ -18,19 +18,19 @@ use axum::{
     routing::{get, post},
     Router,
 };
-use socket_broker::{Broker, MemoryBroker, RedisBroker};
-use socket_core::{api::ApiService, delivery::HubDelivery, hub::Hub, Config};
+use manifold_broker::{Broker, MemoryBroker, RedisBroker};
+use manifold_core::{api::ApiService, delivery::HubDelivery, hub::Hub, Config};
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-    let config_path = std::env::var("SOCKET_CONFIG").unwrap_or_else(|_| "config.toml".into());
+    let config_path = std::env::var("MANIFOLD_CONFIG").unwrap_or_else(|_| "config.toml".into());
 
     let cfg = Config::load(&config_path)
         .unwrap_or_else(|e| panic!("failed to load {config_path}: {e}"));
 
     let json_logs = cfg.telemetry.log_format.as_deref() == Some("json");
     init_tracing(&cfg.server.log_level, json_logs);
-    tracing::info!(node = %cfg.server.node_name, "socket-server starting");
+    tracing::info!(node = %cfg.server.node_name, "manifold-server starting");
 
     let cfg = Arc::new(cfg);
     let hub = Hub::new();
@@ -96,7 +96,7 @@ async fn main() -> anyhow::Result<()> {
     let grpc = tokio::spawn(async move {
         tracing::info!(%grpc_addr, "gRPC Server API listening");
         tonic::transport::Server::builder()
-            .add_service(socket_protocol::server_api_server::ServerApiServer::new(grpc_impl))
+            .add_service(manifold_protocol::server_api_server::ServerApiServer::new(grpc_impl))
             .serve(grpc_addr)
             .await
             .unwrap();

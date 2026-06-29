@@ -5,7 +5,7 @@ import {
   ReplySchema,
   type Command,
   type Reply,
-} from "@socket/proto-gen";
+} from "@manifold/proto-gen";
 
 export function encodeCommand(cmd: Command): Uint8Array {
   return toBinary(CommandSchema, cmd);

@@ -1,9 +1,9 @@
 ---
-title: Socket
+title: Manifold
 description: Configurable realtime engine (WebSocket pub/sub)
 ---
 
-# Socket
+# Manifold
 
 A standalone realtime engine server (pub/sub over WebSocket): "like Centrifugo, but more
 configurable". Runs independently. Monorepo: Rust backend + React frontend + Markdown docs.

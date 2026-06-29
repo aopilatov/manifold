@@ -53,7 +53,7 @@ function Login({ onLogin }: { onLogin: () => void }) {
     <Center h="100vh">
       <Paper withBorder p="xl" w={360}>
         <Stack>
-          <Title order={3}>Socket — Admin</Title>
+          <Title order={3}>Manifold — Admin</Title>
           <PasswordInput
             label="Password"
             value={password}
@@ -75,7 +75,7 @@ function Dashboard() {
     <AppShell header={{ height: 56 }} navbar={{ width: 220, breakpoint: "sm" }} padding="md">
       <AppShell.Header>
         <Group h="100%" px="md" justify="space-between">
-          <Title order={4}>Socket — Admin</Title>
+          <Title order={4}>Manifold — Admin</Title>
           <Badge color="green" variant="dot">
             live
           </Badge>

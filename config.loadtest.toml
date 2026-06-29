@@ -1,0 +1,51 @@
+# Config tuned for load/stress testing: public namespaces (no per-channel config needed),
+# no presence/history (at-most-once → max throughput), single-node in-memory broker.
+strict_namespaces = false
+
+[server]
+node_name = "load-1"
+log_level = "warn"
+
+[server.ws]
+listen           = "0.0.0.0:8000"
+path             = "/connection/websocket"
+max_message_size = "65536"
+ping_interval    = "60s"
+
+[server.http_api]
+listen = "0.0.0.0:8001"
+
+[server.grpc_api]
+listen = "0.0.0.0:8002"
+
+[server.admin]
+listen  = "127.0.0.1:8003"
+enabled = false
+
+[server.health]
+listen = "0.0.0.0:8004"
+
+[redis]
+enabled = false               # set true + url = redis://... to stress multi-node
+url     = "redis://127.0.0.1:6379"
+prefix  = "load"
+
+[auth.jwt]
+algorithm      = "HS256"
+hmac_secret    = "dev-secret"
+audience       = "manifold"
+channels_claim = "channels"
+
+[defaults]
+presence     = false
+join_leave   = false
+history_size = 0              # no recovery overhead
+history_ttl  = "0s"
+[defaults.access]
+subscribe = "public"          # subscribe/publish without per-channel tokens
+publish   = "public"
+presence  = "off"
+history   = "off"
+
+[telemetry]
+log_format = "text"

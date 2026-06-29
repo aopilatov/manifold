@@ -1,18 +1,21 @@
 [package]
-name = "manifold-broker"
+name = "manifold-loadtest"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
 
+[[bin]]
+name = "manifold-loadtest"
+path = "src/main.rs"
+
 [dependencies]
 manifold-protocol = { workspace = true }
 tokio = { workspace = true }
-redis = { workspace = true }
-async-trait = { workspace = true }
 futures = { workspace = true }
-thiserror = { workspace = true }
-tracing = { workspace = true }
 prost = { workspace = true }
-dashmap = { workspace = true }
+anyhow = { workspace = true }
 serde = { workspace = true }
-serde_json = "1"
+jsonwebtoken = { workspace = true }
+tokio-tungstenite = "0.24"
+hdrhistogram = "7"
+clap = { version = "4", features = ["derive"] }

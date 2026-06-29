@@ -1,12 +1,12 @@
 [package]
-name = "socket-core"
+name = "manifold-core"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
 
 [dependencies]
-socket-protocol = { workspace = true }
-socket-broker = { workspace = true }
+manifold-protocol = { workspace = true }
+manifold-broker = { workspace = true }
 tokio = { workspace = true }
 serde = { workspace = true }
 toml = { workspace = true }

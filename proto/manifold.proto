@@ -1,5 +1,5 @@
 syntax = "proto3";
-package socket.v1;
+package manifold.v1;
 
 // ──────────────────────────────────────────────
 //  Client protocol (WebSocket / SSE)

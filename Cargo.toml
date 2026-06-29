@@ -5,6 +5,7 @@ members = [
     "crates/broker",
     "crates/core",
     "crates/server",
+    "crates/loadtest",
 ]
 
 [workspace.package]
@@ -34,6 +35,6 @@ futures = "0.3"
 humantime-serde = "1"
 
 # local crates
-socket-protocol = { path = "crates/protocol" }
-socket-broker = { path = "crates/broker" }
-socket-core = { path = "crates/core" }
+manifold-protocol = { path = "crates/protocol" }
+manifold-broker = { path = "crates/broker" }
+manifold-core = { path = "crates/core" }

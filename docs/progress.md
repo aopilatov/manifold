@@ -68,10 +68,10 @@ SDK↔server (`packages/client-ts/test/e2e.mjs`). The core Cargo tests still go 
 
 | Package | What was done |
 |---|---|
-| `packages/proto-gen` | protobuf-es types generated from `proto/socket.proto` (buf), built into `dist` |
+| `packages/proto-gen` | protobuf-es types generated from `proto/manifold.proto` (buf), built into `dist` |
 | `packages/client-ts` | full SDK: WS transport, protobuf codec, Command↔Reply correlation by id |
 
-**SDK capabilities** (`SocketClient` / `Subscription`):
+**SDK capabilities** (`ManifoldClient` / `Subscription`):
 
 - Subscription registry as the source of truth; restoring **all subscriptions in 1 RTT** via `Connect.subs`.
 - Reconnect with jittered backoff (`jitteredDelay`), reuse of the cached JWT.
@@ -86,7 +86,7 @@ SDK↔server (`packages/client-ts/test/e2e.mjs`). The core Cargo tests still go 
 - `test/e2e.mjs` — **live round-trip against the Rust server**: connect → subscribe → publish →
   receive `hello-e2e` → presence `[smoke-1]`. ✔
 
-**Side effect:** the server got WebSocket-subprotocol negotiation `socket.v1`
+**Side effect:** the server got WebSocket-subprotocol negotiation `manifold.v1`
 (`ws.protocols([...])`) — part of `require_subprotocol`; without it undici-WebSocket dropped the connection.
 
 ---
@@ -175,7 +175,7 @@ Auth — API key (`Authorization: apikey <key>` + method `allow`).
 | Layer | Where |
 |---|---|
 | HTTP/JSON | `server/http_api.rs` (`POST /api/<method>`, `data` — base64) |
-| gRPC | `server/grpc_api.rs` (tonic, service `socket.v1.ServerApi`) |
+| gRPC | `server/grpc_api.rs` (tonic, service `manifold.v1.ServerApi`) |
 | Idempotency | `Broker.idempotency_get/put` (Redis `SET EX` / memory) |
 | Control channel | `Broker.control_publish` + `Delivery.control` (Redis `{prefix}:control`) |
 
@@ -203,9 +203,9 @@ gRPC methods `subscribe`/`batch`/`publish_stream`/`history_remove` — stubs.
 
 **Observability:**
 
-- **Prometheus** `/metrics` (on the health port): `socket_connections`, `socket_channels` (gauge),
-  `socket_messages_published_total`, `socket_subscriptions_total`,
-  `socket_connections_opened/closed_total` (counter). Counters — atomic in `core/metrics.rs`,
+- **Prometheus** `/metrics` (on the health port): `manifold_connections`, `manifold_channels` (gauge),
+  `manifold_messages_published_total`, `manifold_subscriptions_total`,
+  `manifold_connections_opened/closed_total` (counter). Counters — atomic in `core/metrics.rs`,
   with no dependency on Prometheus; the exposition is built in the server.
 - **JSON logs** — via `[telemetry].log_format = "json"`.
 
@@ -250,7 +250,7 @@ The reference docs are generated from sources of truth and built by docmd into s
 
 **Generator** (`docs/generate.mjs`, protobufjs reflection + a config parser):
 
-- `proto/socket.proto` → `protocol.md` (client messages with field/oneof tables) +
+- `proto/manifold.proto` → `protocol.md` (client messages with field/oneof tables) +
   `server-api.md` (gRPC service `ServerApi` + `*Api*` messages).
 - `config.toml` → `config-reference.md` (sections + key/example/description from inline comments).
 

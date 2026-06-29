@@ -9,7 +9,7 @@
 
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
-use socket_protocol::{push, reply, ClientInfo, Publication, Push, Reply, StreamPosition};
+use manifold_protocol::{push, reply, ClientInfo, Publication, Push, Reply, StreamPosition};
 use std::collections::HashMap;
 use std::time::{SystemTime, UNIX_EPOCH};
 

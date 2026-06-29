@@ -20,10 +20,10 @@ COPY packages ./packages
 COPY web ./web
 
 # proto-gen (buf) → client SDK → admin UI.
-RUN pnpm --filter @socket/proto-gen generate \
- && pnpm --filter @socket/proto-gen build \
- && pnpm --filter @socket/client build \
- && pnpm --filter @socket/web build
+RUN pnpm --filter @manifold/proto-gen generate \
+ && pnpm --filter @manifold/proto-gen build \
+ && pnpm --filter @manifold/client build \
+ && pnpm --filter @manifold/web build
 
 # ──────────────────────────────────────────────────────────────
 # Stage 2 — build: compile the Rust server.
@@ -42,8 +42,8 @@ COPY crates ./crates
 COPY proto ./proto
 
 # protoc is vendored by the protocol crate's build.rs (protoc-bin-vendored) — no system protoc.
-RUN cargo build --release -p socket-server \
- && strip target/release/socket-server
+RUN cargo build --release -p manifold-server \
+ && strip target/release/manifold-server
 
 # ──────────────────────────────────────────────────────────────
 # Stage 3 — runtime: ubi10-micro (no package manager, minimal surface)
@@ -55,11 +55,11 @@ WORKDIR /app
 # binary just runs. Only need a CA bundle for outbound HTTPS (event webhooks over rustls).
 COPY --from=build /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
 
-COPY --from=build /src/target/release/socket-server /app/socket-server
+COPY --from=build /src/target/release/manifold-server /app/manifold-server
 COPY --from=web   /src/web/dist                     /app/web/dist
 COPY config.toml /app/config.toml
 
-ENV SOCKET_CONFIG=/app/config.toml \
+ENV MANIFOLD_CONFIG=/app/config.toml \
     SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
 
 # ws, http-api, grpc-api, admin, health/metrics
@@ -68,4 +68,4 @@ EXPOSE 8000 8001 8002 8003 8004
 # Run as non-root (numeric UID works without /etc/passwd entry).
 USER 1001
 
-ENTRYPOINT ["/app/socket-server"]
+ENTRYPOINT ["/app/manifold-server"]

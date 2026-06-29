@@ -1,5 +1,5 @@
 {
-  "name": "@socket/client",
+  "name": "@manifold/client",
   "version": "0.1.0",
   "description": "Engine client SDK: transport (WS/SSE), reconnect, subscription registry, recovery, protobuf",
   "type": "module",
@@ -20,7 +20,7 @@
   },
   "dependencies": {
     "@bufbuild/protobuf": "^2.2.0",
-    "@socket/proto-gen": "workspace:*"
+    "@manifold/proto-gen": "workspace:*"
   },
   "devDependencies": {
     "@grpc/grpc-js": "^1.12.0",

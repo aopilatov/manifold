@@ -4,7 +4,7 @@
 use crate::{new_epoch, pub_push, Broker, ControlCommand, Delivery, Recovered, Result};
 use async_trait::async_trait;
 use dashmap::DashMap;
-use socket_protocol::{ClientInfo, Publication, Reply, StreamPosition};
+use manifold_protocol::{ClientInfo, Publication, Reply, StreamPosition};
 use std::collections::{HashMap, VecDeque};
 use std::sync::Arc;
 

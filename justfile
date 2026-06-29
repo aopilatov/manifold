@@ -17,7 +17,7 @@ proto-gen:
 
 # Run the engine (Rust)
 server:
-    SOCKET_CONFIG=config.toml cargo run -p socket-server
+    MANIFOLD_CONFIG=config.toml cargo run -p manifold-server
 
 # Admin UI (Vite dev)
 web:
@@ -44,6 +44,15 @@ build:
 # Rust tests
 test:
     cargo test
+
+# Start a load-test-tuned server (public namespaces, no presence/history)
+loadtest-server:
+    MANIFOLD_CONFIG=config.loadtest.toml cargo run --release -p manifold-server
+
+# Run the load generator. Raise the fd limit first: `ulimit -n 200000`.
+# Example: just loadtest --subscribers 2000 --messages 5000000 --rate 400000
+loadtest *ARGS:
+    cargo run --release -p manifold-loadtest -- {{ARGS}}
 
 # Checks (clippy + fmt)
 check:

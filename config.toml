@@ -7,7 +7,7 @@ strict_namespaces = true          # channel with an unknown namespace → reject
 #  Server and transports
 # ──────────────────────────────────────────────
 [server]
-node_name = "socket-1"
+node_name = "manifold-1"
 log_level = "info"
 
 [server.ws]
@@ -53,8 +53,8 @@ require_subprotocol      = true
 
 [server.tls]
 enabled   = false
-cert_path = "/etc/socket/tls/cert.pem"
-key_path  = "/etc/socket/tls/key.pem"
+cert_path = "/etc/manifold/tls/cert.pem"
+key_path  = "/etc/manifold/tls/key.pem"
 
 # ──────────────────────────────────────────────
 #  Broker
@@ -62,7 +62,7 @@ key_path  = "/etc/socket/tls/key.pem"
 [redis]
 enabled         = false          # true → multi-node (RedisBroker); false → single node (in-memory)
 url             = "redis://127.0.0.1:6379"
-prefix          = "socket"
+prefix          = "manifold"
 idempotency_ttl = "5m"
 
 # ──────────────────────────────────────────────
@@ -71,7 +71,7 @@ idempotency_ttl = "5m"
 [auth.jwt]
 algorithm      = "HS256"
 hmac_secret    = "${JWT_HMAC_SECRET}"
-audience       = "socket"
+audience       = "manifold"
 channels_claim = "channels"
 
 # ──────────────────────────────────────────────
@@ -148,7 +148,7 @@ reconnect_advice = true
 
 [events]                           # opt. backend notifications about lifecycle
 enabled   = false
-endpoint  = "https://app.example.com/socket/events"
+endpoint  = "https://app.example.com/manifold/events"
 types     = ["connected", "disconnected", "subscribed", "unsubscribed"]
 transport = "http"
 

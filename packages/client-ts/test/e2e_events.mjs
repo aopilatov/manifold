@@ -1,7 +1,7 @@
 // E2E lifecycle events + metrics.
 import http from "node:http";
 import crypto from "node:crypto";
-import { SocketClient } from "../dist/index.js";
+import { ManifoldClient } from "../dist/index.js";
 
 const SECRET = "dev-secret";
 const WS_URL = "ws://127.0.0.1:18000/connection/websocket";
@@ -36,11 +36,11 @@ function mintJwt(payload, secret) {
   return `${data}.${crypto.createHmac("sha256", secret).update(data).digest("base64url")}`;
 }
 const token = mintJwt(
-  { sub: "u-ev", aud: "socket", channels: [{ match: "chat:room:*", allow: ["sub", "presence"] }] },
+  { sub: "u-ev", aud: "manifold", channels: [{ match: "chat:room:*", allow: ["sub", "presence"] }] },
   SECRET,
 );
 
-const client = new SocketClient({ url: WS_URL, getToken: async () => token });
+const client = new ManifoldClient({ url: WS_URL, getToken: async () => token });
 await client.connect().catch((e) => fail("connect: " + e.message));
 const sub = client.newSubscription("chat:room:1");
 await sub.subscribe().catch((e) => fail("subscribe: " + e.message));
@@ -56,10 +56,10 @@ for (const k of ["connected", "subscribed", "unsubscribed", "disconnected"]) {
 }
 
 const metrics = await fetch(METRICS).then((r) => r.text());
-const lines = metrics.split("\n").filter((l) => l.startsWith("socket_") && !l.startsWith("#"));
+const lines = metrics.split("\n").filter((l) => l.startsWith("manifold_") && !l.startsWith("#"));
 console.log("metrics:\n" + lines.join("\n"));
-if (!metrics.includes("socket_subscriptions_total")) fail("missing subscriptions metric");
-if (!metrics.includes("socket_connections_opened_total")) fail("missing connections_opened metric");
+if (!metrics.includes("manifold_subscriptions_total")) fail("missing subscriptions metric");
+if (!metrics.includes("manifold_connections_opened_total")) fail("missing connections_opened metric");
 
 receiver.close();
 console.log("E2E EVENTS OK");

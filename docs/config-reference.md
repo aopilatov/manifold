@@ -15,7 +15,7 @@ Source — `config.toml`. Secrets are set via `${ENV_VAR}`.
 
 | Key | Example | Description |
 |---|---|---|
-| `node_name` | `"socket-1"` |  |
+| `node_name` | `"manifold-1"` |  |
 | `log_level` | `"info"` |  |
 
 ## `[server.ws]`
@@ -88,8 +88,8 @@ Source — `config.toml`. Secrets are set via `${ENV_VAR}`.
 | Key | Example | Description |
 |---|---|---|
 | `enabled` | `false` |  |
-| `cert_path` | `"/etc/socket/tls/cert.pem"` |  |
-| `key_path` | `"/etc/socket/tls/key.pem"` |  |
+| `cert_path` | `"/etc/manifold/tls/cert.pem"` |  |
+| `key_path` | `"/etc/manifold/tls/key.pem"` |  |
 
 ## `[redis]`
 
@@ -97,7 +97,7 @@ Source — `config.toml`. Secrets are set via `${ENV_VAR}`.
 |---|---|---|
 | `enabled` | `false` | true → multi-node (RedisBroker); false → single node (in-memory) |
 | `url` | `"redis://127.0.0.1:6379"` |  |
-| `prefix` | `"socket"` |  |
+| `prefix` | `"manifold"` |  |
 | `idempotency_ttl` | `"5m"` |  |
 
 ## `[auth.jwt]`
@@ -106,7 +106,7 @@ Source — `config.toml`. Secrets are set via `${ENV_VAR}`.
 |---|---|---|
 | `algorithm` | `"HS256"` |  |
 | `hmac_secret` | `"${JWT_HMAC_SECRET}"` |  |
-| `audience` | `"socket"` |  |
+| `audience` | `"manifold"` |  |
 | `channels_claim` | `"channels"` |  |
 
 ## `[api_keys]`
@@ -220,7 +220,7 @@ Source — `config.toml`. Secrets are set via `${ENV_VAR}`.
 | Key | Example | Description |
 |---|---|---|
 | `enabled` | `false` |  |
-| `endpoint` | `"https://app.example.com/socket/events"` |  |
+| `endpoint` | `"https://app.example.com/manifold/events"` |  |
 | `types` | `["connected", "disconnected", "subscribed", "unsubscribed"]` |  |
 | `transport` | `"http"` |  |
 

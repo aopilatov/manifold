@@ -1,4 +1,4 @@
-// SocketClient — client SDK. Transport-agnostic (WS/SSE), correlates Command↔Reply by id,
+// ManifoldClient — client SDK. Transport-agnostic (WS/SSE), correlates Command↔Reply by id,
 // subscription registry (source of truth), reconnect with jitter, subscription restoration, recovery,
 // token refresh (variant B), ping.
 
@@ -12,12 +12,12 @@ import {
   type Reply,
   type StreamPosition,
   type SubscribeResult,
-} from "@socket/proto-gen";
+} from "@manifold/proto-gen";
 import { jitteredDelay } from "./backoff.js";
 import { encodeCommand } from "./codec.js";
 import { makeTransport, type Transport } from "./transport.js";
 
-export interface SocketOptions {
+export interface ManifoldOptions {
   url: string;
   getToken: () => Promise<string>;
   getSubToken?: (channel: string) => Promise<string>;
@@ -45,7 +45,7 @@ export class Subscription extends Emitter {
   position?: StreamPosition;
   subToken?: string;
 
-  constructor(private client: SocketClient, readonly channel: string) {
+  constructor(private client: ManifoldClient, readonly channel: string) {
     super();
   }
 
@@ -86,8 +86,8 @@ export class Subscription extends Emitter {
   }
 }
 
-export class SocketClient extends Emitter {
-  readonly options: SocketOptions;
+export class ManifoldClient extends Emitter {
+  readonly options: ManifoldOptions;
   private transport?: Transport;
   private token?: string;
   private nextId = 1;
@@ -98,7 +98,7 @@ export class SocketClient extends Emitter {
   private pingTimer: any;
   private refreshTimer: any;
 
-  constructor(opts: SocketOptions) {
+  constructor(opts: ManifoldOptions) {
     super();
     this.options = opts;
   }

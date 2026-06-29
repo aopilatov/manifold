@@ -1,18 +1,18 @@
 [package]
-name = "socket-server"
+name = "manifold-server"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
-default-run = "socket-server"
+default-run = "manifold-server"
 
 [[bin]]
-name = "socket-server"
+name = "manifold-server"
 path = "src/main.rs"
 
 [dependencies]
-socket-protocol = { workspace = true }
-socket-broker = { workspace = true }
-socket-core = { workspace = true }
+manifold-protocol = { workspace = true }
+manifold-broker = { workspace = true }
+manifold-core = { workspace = true }
 tokio = { workspace = true }
 axum = { workspace = true }
 prost = { workspace = true }

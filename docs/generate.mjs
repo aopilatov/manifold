@@ -1,5 +1,5 @@
 // Auto-generates reference documentation from the sources of truth:
-//   proto/socket.proto → protocol.md (client protocol) + server-api.md (gRPC ServerApi)
+//   proto/manifold.proto → protocol.md (client protocol) + server-api.md (gRPC ServerApi)
 //   config.toml        → config-reference.md
 //
 // Run: node docs/generate.mjs  (from the repo root)
@@ -10,7 +10,7 @@ import { fileURLToPath } from "node:url";
 import protobuf from "protobufjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const PROTO = path.join(root, "proto/socket.proto");
+const PROTO = path.join(root, "proto/manifold.proto");
 const CONFIG = path.join(root, "config.toml");
 const OUT = path.join(root, "docs");
 
@@ -35,7 +35,7 @@ function messageTable(type) {
 function loadProto() {
   const r = new protobuf.Root();
   r.loadSync(PROTO, { keepCase: true });
-  return r.lookup("socket.v1");
+  return r.lookup("manifold.v1");
 }
 
 function isApi(name) {
@@ -45,7 +45,7 @@ function isApi(name) {
 function generateProtocol(ns) {
   const messages = ns.nestedArray.filter((n) => n instanceof protobuf.Type && !isApi(n.name));
   let md = fm("Protocol", "Client WebSocket/SSE protocol (Protobuf)") + note;
-  md += "Binary protobuf. Package `socket.v1`. The client sends a `Command`, the server replies with a `Reply` " +
+  md += "Binary protobuf. Package `manifold.v1`. The client sends a `Command`, the server replies with a `Reply` " +
     "(same `id`) or an asynchronous `Push` (`id = 0`).\n\n";
   for (const t of messages) {
     md += `## ${t.name}\n\n${messageTable(t)}`;

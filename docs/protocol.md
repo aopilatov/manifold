@@ -5,7 +5,7 @@ description: Client WebSocket/SSE protocol (Protobuf)
 
 > Generated automatically from the sources of truth. Do not edit manually.
 
-Binary protobuf. Package `socket.v1`. The client sends a `Command`, the server replies with a `Reply` (same `id`) or an asynchronous `Push` (`id = 0`).
+Binary protobuf. Package `manifold.v1`. The client sends a `Command`, the server replies with a `Reply` (same `id`) or an asynchronous `Push` (`id = 0`).
 
 ## Command
 

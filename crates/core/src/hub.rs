@@ -1,9 +1,9 @@
 //! Hub: in-memory routing on a node. Only connections and a "channel → local subscribers" index.
-//! Channel state (offset/epoch/history/presence) lives in [`socket_broker::Broker`].
+//! Channel state (offset/epoch/history/presence) lives in [`manifold_broker::Broker`].
 
 use crate::auth::Claims;
 use dashmap::DashMap;
-use socket_protocol::{push, reply, ClientInfo, Disconnect, Join, Leave, Push, Reply, Unsubscribe};
+use manifold_protocol::{push, reply, ClientInfo, Disconnect, Join, Leave, Push, Reply, Unsubscribe};
 use std::collections::HashSet;
 use std::sync::Arc;
 use tokio::sync::mpsc;

@@ -1,7 +1,7 @@
 {
-  "name": "@socket/proto-gen",
+  "name": "@manifold/proto-gen",
   "version": "0.1.0",
-  "description": "protobuf-es types generated from proto/socket.proto (shared by client-ts and web)",
+  "description": "protobuf-es types generated from proto/manifold.proto (shared by client-ts and web)",
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",

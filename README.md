@@ -1,4 +1,4 @@
-# Socket
+# Manifold
 
 A configurable realtime engine (WebSocket pub/sub) — "like Centrifugo, but more configurable".
 A standalone server that runs independently. Monorepo: Rust backend + React frontend + docs.
@@ -8,13 +8,13 @@ A standalone server that runs independently. Monorepo: Rust backend + React fron
 ## Structure
 
 ```
-socket/
+manifold/
 ├── crates/
 │   ├── server/      # axum: WS/SSE, Server API (HTTP+gRPC), admin, health
 │   ├── core/        # config, auth (JWT+glob), hub, namespace, ApiService
 │   ├── broker/      # trait Broker + Redis implementation
 │   └── protocol/    # prost/tonic types from proto/
-├── proto/           # socket.proto — the single contract
+├── proto/           # manifold.proto — the single contract
 ├── packages/
 │   ├── client-ts/   # client SDK (reconnect, recovery, subscription registry)
 │   └── proto-gen/   # protobuf-es types (shared by client-ts and web)
@@ -36,7 +36,7 @@ socket/
 
 ```bash
 just infra-up        # Redis
-just server          # engine (cargo run -p socket-server)
+just server          # engine (cargo run -p manifold-server)
 just web             # admin UI (Vite)
 just docs            # documentation (docmd)
 ```

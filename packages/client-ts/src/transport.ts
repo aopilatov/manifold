@@ -1,7 +1,7 @@
 // SDK transports behind a single interface (architecture section 4).
 // WS — bidirectional socket. SSE — split session (EventSource downstream + POST upstream).
 
-import { type ConnectResult, type Reply } from "@socket/proto-gen";
+import { type ConnectResult, type Reply } from "@manifold/proto-gen";
 import { decodeReply } from "./codec.js";
 
 export interface Transport {
@@ -33,7 +33,7 @@ export class WsTransport implements Transport {
   constructor(private url: string) {}
 
   async open(_token: string): Promise<null> {
-    const ws = new WebSocket(this.url, "socket.v1");
+    const ws = new WebSocket(this.url, "manifold.v1");
     ws.binaryType = "arraybuffer";
     this.ws = ws;
     await new Promise<void>((resolve, reject) => {

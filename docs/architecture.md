@@ -3,7 +3,7 @@ title: Architecture
 description: Design document for a realtime engine (WebSocket pub/sub)
 ---
 
-# Socket — design document
+# Manifold — design document
 
 A standalone realtime engine server (pub/sub over WebSocket): "like Centrifugo,
 but more configurable". Deployed and run independently, not embedded as a library.
@@ -49,7 +49,7 @@ independent parts tied together by a shared `.proto` contract.
 ## 3. Repository structure
 
 ```
-socket/
+manifold/
 ├── Cargo.toml               # cargo workspace
 ├── proto/                   # .proto — the SINGLE contract (source of truth)
 ├── crates/
@@ -107,7 +107,7 @@ trait Transport {
 
 ```protobuf
 syntax = "proto3";
-package socket.v1;
+package manifold.v1;
 
 message Command {
   uint32 id = 1;              // correlation id, unique within a connection
@@ -240,8 +240,8 @@ message StreamPosition {
 - **Token expiration — variant B (per-connection refresh):** via the `getToken()` callback the SDK
   fetches a new token from the external backend and sends it in `RefreshRequest` / `SubRefreshRequest`.
   The connection/subscription lives on — without a reconnect, without presence noise, without a reconnect storm.
-- **Versioning:** the major version is in the proto package (`socket.v1`); negotiation via the WS subprotocol
-  (`Sec-WebSocket-Protocol: socket.v1`) / SSE query (`?v=1`). Within a major — only additive
+- **Versioning:** the major version is in the proto package (`manifold.v1`); negotiation via the WS subprotocol
+  (`Sec-WebSocket-Protocol: manifold.v1`) / SSE query (`?v=1`). Within a major — only additive
   changes (field numbers are not reused). The SDK must **safely skip unknown**
   `oneof` variants of `Push`. `protocol_version` in `ConnectRequest` — for diagnostics/soft gates;
   a major mismatch → `Disconnect{reconnect:false}`.
@@ -326,7 +326,7 @@ one `NamespaceConfig` type; unset fields are inherited from `defaults`.
 
 ```toml
 [server]
-node_name = "socket-1"
+node_name = "manifold-1"
 log_level = "info"
 
 [server.ws]
@@ -357,12 +357,12 @@ connect_rate_per_ip      = { rate = 10, burst = 20 }   # anti connection-flood
 handshake_timeout        = "5s"  # must send a valid Connect in time (anti slow-loris)
 idle_timeout             = "60s" # no ping/activity → close
 write_buffer_limit       = "1MB" # overflowed the outgoing buffer → disconnect (slow consumer)
-require_subprotocol      = true  # require Sec-WebSocket-Protocol: socket.v1
+require_subprotocol      = true  # require Sec-WebSocket-Protocol: manifold.v1
 
 [server.tls]                     # opt.; usually TLS is terminated at the LB/proxy
 enabled     = false
-cert_path   = "/etc/socket/tls/cert.pem"
-key_path    = "/etc/socket/tls/key.pem"
+cert_path   = "/etc/manifold/tls/cert.pem"
+key_path    = "/etc/manifold/tls/key.pem"
 min_version = "1.2"
 
 [server.http_api]
@@ -382,7 +382,7 @@ listen = "0.0.0.0:8004"          # separate port; /health (liveness), /ready (re
 
 [redis]
 url             = "redis://127.0.0.1:6379"
-prefix          = "socket"
+prefix          = "manifold"
 idempotency_ttl = "5m"
 node_heartbeat  = "5s"           # the node writes a heartbeat to Redis → info aggregates the cluster
 
@@ -392,7 +392,7 @@ reconnect_advice = true          # broadcast Disconnect{reconnect:true}
 
 [events]                         # opt. backend notifications about lifecycle (NOT authorization)
 enabled  = false
-endpoint = "https://app.example.com/socket/events"
+endpoint = "https://app.example.com/manifold/events"
 types    = ["connected", "disconnected", "subscribed", "unsubscribed"]
 transport = "http"               # http (batch webhook) | grpc (stream)
 
@@ -405,7 +405,7 @@ otlp_endpoint   = "http://localhost:4317"
 algorithm      = "HS256"
 hmac_secret    = "${JWT_HMAC_SECRET}"
 # or: algorithm = "RS256", jwks_url = "https://app.example.com/.well-known/jwks.json"
-audience       = "socket"
+audience       = "manifold"
 channels_claim = "channels"
 
 [[api_keys]]
@@ -714,7 +714,7 @@ application code works at a high level (`subscribe`/`publish`/`on`) without know
   renewal via `RefreshRequest`/`SubRefreshRequest` (variant B, without a reconnect).
 - **API**: `connect()`, `newSubscription(channel)`, `sub.on('publication'|'join'|'leave')`,
   `sub.subscribe/unsubscribe()`, `publish/presence/history`.
-- **Version**: negotiates `socket.v1`; safely skips unknown `Push` variants.
+- **Version**: negotiates `manifold.v1`; safely skips unknown `Push` variants.
 
 The same package is reused by the admin (`web/`) for live `$metrics` and the opt. public `/playground`.
 
@@ -761,8 +761,8 @@ The same package is reused by the admin (`web/`) for live `$metrics` and the opt
   exceeding — `Error{rate_limited, temporary}`, not a disconnect.
 - ~~Transport fallbacks (SSE/HTTP-streaming) — whether they are needed.~~ **Resolved:** WebSocket + SSE in the MVP,
   both behind a `Transport` trait. HTTP-streaming/WebTransport — additively later.
-- ~~Protocol versioning.~~ **Resolved:** the major in the proto package (`socket.v1`) + negotiation
-  via the WS subprotocol (`Sec-WebSocket-Protocol: socket.v1`) / SSE query (`?v=1`); additive
+- ~~Protocol versioning.~~ **Resolved:** the major in the proto package (`manifold.v1`) + negotiation
+  via the WS subprotocol (`Sec-WebSocket-Protocol: manifold.v1`) / SSE query (`?v=1`); additive
   changes within a major (Protobuf compatibility); the SDK safely skips unknown
   `oneof` variants; `protocol_version` in `ConnectRequest` for diagnostics; a major mismatch →
   `Disconnect{reconnect:false}` + `Error{temporary:false}`.

@@ -17,12 +17,12 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    image: socket:latest
+    image: manifold:latest
     depends_on:
       redis:
         condition: service_healthy
     environment:
-      SOCKET_CONFIG: /app/config.toml
+      MANIFOLD_CONFIG: /app/config.toml
       JWT_HMAC_SECRET: ${JWT_HMAC_SECRET:-dev-secret}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:-admin}
       API_KEY_BACKEND: ${API_KEY_BACKEND:-dev-backend-key}

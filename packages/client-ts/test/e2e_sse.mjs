@@ -2,7 +2,7 @@
 import crypto from "node:crypto";
 import { EventSource } from "undici"; // EventSource is global in the browser; in Node it's a polyfill
 globalThis.EventSource ??= EventSource;
-import { SocketClient } from "../dist/index.js";
+import { ManifoldClient } from "../dist/index.js";
 
 const SECRET = "dev-secret";
 const WS_URL = "ws://127.0.0.1:18000/connection/websocket"; // the SDK derives the SSE URL itself
@@ -15,7 +15,7 @@ function mintJwt(payload, secret) {
   return `${data}.${crypto.createHmac("sha256", secret).update(data).digest("base64url")}`;
 }
 const token = mintJwt(
-  { sub: "u-sse", aud: "socket", channels: [{ match: "chat:room:*", allow: ["sub", "pub", "presence"] }] },
+  { sub: "u-sse", aud: "manifold", channels: [{ match: "chat:room:*", allow: ["sub", "pub", "presence"] }] },
   SECRET,
 );
 const fail = (m) => {
@@ -25,7 +25,7 @@ const fail = (m) => {
 
 if (typeof EventSource === "undefined") fail("this Node has no global EventSource");
 
-const client = new SocketClient({ url: WS_URL, transport: "sse", getToken: async () => token });
+const client = new ManifoldClient({ url: WS_URL, transport: "sse", getToken: async () => token });
 
 const res = await client.connect().catch((e) => fail("connect: " + e.message));
 console.log("SSE connected, session:", res.client);

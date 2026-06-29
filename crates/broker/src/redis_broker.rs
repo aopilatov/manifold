@@ -14,7 +14,7 @@ use prost::Message as _;
 use redis::aio::ConnectionManager;
 use redis::streams::StreamRangeReply;
 use redis::{AsyncCommands, Script};
-use socket_protocol::{ClientInfo, Publication, Reply, StreamPosition};
+use manifold_protocol::{ClientInfo, Publication, Reply, StreamPosition};
 use std::collections::HashMap;
 use std::sync::Arc;
 

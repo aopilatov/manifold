@@ -2,7 +2,7 @@
 
 use std::collections::HashSet;
 
-use socket_core::events::{EventSink, LifecycleEvent};
+use manifold_core::events::{EventSink, LifecycleEvent};
 
 pub struct HttpEventSink {
     client: reqwest::Client,

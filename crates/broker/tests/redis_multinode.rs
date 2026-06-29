@@ -4,8 +4,8 @@
 use std::sync::Arc;
 use std::time::Duration;
 
-use socket_broker::{Broker, ControlCommand, Delivery, RedisBroker};
-use socket_protocol::{push, reply, ClientInfo, Reply};
+use manifold_broker::{Broker, ControlCommand, Delivery, RedisBroker};
+use manifold_protocol::{push, reply, ClientInfo, Reply};
 use tokio::sync::mpsc::{unbounded_channel, UnboundedReceiver, UnboundedSender};
 
 const URL: &str = "redis://127.0.0.1:6379";
@@ -76,7 +76,7 @@ async fn recovery_via_redis() {
     a.publish(ch, vec![3], None, false, 100).await.unwrap();
 
     // recover from offset=1 (same epoch) → should receive offset 2 and 3
-    let since = socket_protocol::StreamPosition { offset: 1, epoch: p1.epoch.clone() };
+    let since = manifold_protocol::StreamPosition { offset: 1, epoch: p1.epoch.clone() };
     let r = a.recover(ch, &since, 10).await.unwrap();
     assert!(r.recovered, "gap within history range");
     assert_eq!(r.publications.len(), 2);
@@ -84,7 +84,7 @@ async fn recovery_via_redis() {
     assert_eq!(r.publications[0].data, vec![2]);
 
     // foreign epoch → cannot recover
-    let bad = socket_protocol::StreamPosition { offset: 1, epoch: "deadbeef".into() };
+    let bad = manifold_protocol::StreamPosition { offset: 1, epoch: "deadbeef".into() };
     let r2 = a.recover(ch, &bad, 10).await.unwrap();
     assert!(!r2.recovered);
 }

@@ -4,7 +4,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import grpc from "@grpc/grpc-js";
 import protoLoader from "@grpc/proto-loader";
-import { SocketClient } from "../dist/index.js";
+import { ManifoldClient } from "../dist/index.js";
 
 const SECRET = "dev-secret";
 const WS_URL = "ws://127.0.0.1:18000/connection/websocket";
@@ -12,7 +12,7 @@ const GRPC_ADDR = "127.0.0.1:18002";
 const API_KEY = "test-key";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
-const PROTO = path.resolve(here, "../../../proto/socket.proto");
+const PROTO = path.resolve(here, "../../../proto/manifold.proto");
 
 const fail = (m) => {
   console.error("E2E GRPC FAIL:", m);
@@ -27,18 +27,18 @@ function mintJwt(payload, secret) {
   return `${data}.${crypto.createHmac("sha256", secret).update(data).digest("base64url")}`;
 }
 const token = mintJwt(
-  { sub: "u-g", aud: "socket", channels: [{ match: "chat:room:*", allow: ["sub"] }] },
+  { sub: "u-g", aud: "manifold", channels: [{ match: "chat:room:*", allow: ["sub"] }] },
   SECRET,
 );
 
 // gRPC client
 const def = protoLoader.loadSync(PROTO, { keepCase: true, longs: String, defaults: true });
 const pkg = grpc.loadPackageDefinition(def);
-const Svc = pkg.socket.v1.ServerApi;
+const Svc = pkg.manifold.v1.ServerApi;
 const grpcClient = new Svc(GRPC_ADDR, grpc.credentials.createInsecure());
 
 // WS subscriber
-const client = new SocketClient({ url: WS_URL, getToken: async () => token });
+const client = new ManifoldClient({ url: WS_URL, getToken: async () => token });
 await client.connect().catch((e) => fail("ws connect: " + e.message));
 const sub = client.newSubscription("chat:room:1");
 const received = new Promise((res) => sub.on("publication", (p) => res(new TextDecoder().decode(p.data))));

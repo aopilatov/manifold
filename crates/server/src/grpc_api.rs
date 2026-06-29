@@ -5,9 +5,9 @@ use std::collections::HashMap;
 use std::pin::Pin;
 use std::sync::Arc;
 
-use socket_protocol::server_api_server::ServerApi;
-use socket_protocol::*;
-use socket_core::api::ApiService;
+use manifold_protocol::server_api_server::ServerApi;
+use manifold_protocol::*;
+use manifold_core::api::ApiService;
 use tonic::{Request, Response, Status, Streaming};
 
 pub struct GrpcApi {
@@ -37,7 +37,7 @@ fn opt(s: &str) -> Option<&str> {
     }
 }
 
-fn broker_error(e: socket_broker::BrokerError) -> Error {
+fn broker_error(e: manifold_broker::BrokerError) -> Error {
     Error { code: 110, message: e.to_string(), temporary: true }
 }
 

@@ -1,6 +1,6 @@
 // E2E Server API: HTTP publish on node-1 → subscriber on node-2; then HTTP disconnect across the cluster.
 import crypto from "node:crypto";
-import { SocketClient } from "../dist/index.js";
+import { ManifoldClient } from "../dist/index.js";
 
 const SECRET = "dev-secret";
 const NODE2_WS = "ws://127.0.0.1:19000/connection/websocket";
@@ -15,7 +15,7 @@ function mintJwt(payload, secret) {
   return `${data}.${crypto.createHmac("sha256", secret).update(data).digest("base64url")}`;
 }
 const token = mintJwt(
-  { sub: "u-x", aud: "socket", channels: [{ match: "chat:room:*", allow: ["sub", "presence"] }] },
+  { sub: "u-x", aud: "manifold", channels: [{ match: "chat:room:*", allow: ["sub", "presence"] }] },
   SECRET,
 );
 const fail = (m) => {
@@ -30,7 +30,7 @@ const apiPost = (path, body) =>
   });
 
 // Subscriber on NODE 2
-const clientB = new SocketClient({ url: NODE2_WS, getToken: async () => token });
+const clientB = new ManifoldClient({ url: NODE2_WS, getToken: async () => token });
 clientB.disconnect = clientB.disconnect.bind(clientB);
 await clientB.connect().catch((e) => fail("B connect: " + e.message));
 const subB = clientB.newSubscription("chat:room:1");

@@ -1,8 +1,8 @@
 //! Single orchestrator for client commands. Channel state lives in the broker (single node: Memory,
 //! multi-node: Redis). The hub only does local routing.
 
-use socket_broker::{Broker, BrokerError, ControlCommand};
-use socket_protocol::{
+use manifold_broker::{Broker, BrokerError, ControlCommand};
+use manifold_protocol::{
     command, reply, ClientInfo, Command, ConnectRequest, ConnectResult, Error, HistoryRequest,
     HistoryResult, PongResult, PresenceResult, Publication, PublishRequest, PublishResult, Reply,
     StreamPosition, SubscribeRequest, SubscribeResult, UnsubscribeResult,
@@ -75,7 +75,7 @@ impl ApiService {
     pub fn in_memory(cfg: Arc<Config>) -> Self {
         let hub = Hub::new();
         let delivery = crate::delivery::HubDelivery::new(hub.clone());
-        let broker = socket_broker::MemoryBroker::new(delivery);
+        let broker = manifold_broker::MemoryBroker::new(delivery);
         Self::new(cfg, hub, broker)
     }
 
@@ -377,6 +377,6 @@ fn err(code: u32, message: &str, temporary: bool) -> Error {
     Error { code, message: message.to_string(), temporary }
 }
 
-fn broker_err(e: socket_broker::BrokerError) -> Error {
+fn broker_err(e: manifold_broker::BrokerError) -> Error {
     err(110, &format!("broker: {e}"), true)
 }

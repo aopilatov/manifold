@@ -3,10 +3,10 @@
 use std::sync::Arc;
 use std::time::Duration;
 
-use socket_core::api::ApiService;
-use socket_core::auth::{ChannelGrant, Claims};
-use socket_core::Config;
-use socket_protocol::{push, reply, PublishRequest, Reply, StreamPosition, SubscribeRequest};
+use manifold_core::api::ApiService;
+use manifold_core::auth::{ChannelGrant, Claims};
+use manifold_core::Config;
+use manifold_protocol::{push, reply, PublishRequest, Reply, StreamPosition, SubscribeRequest};
 use tokio::sync::mpsc;
 
 fn cfg() -> Arc<Config> {
@@ -35,7 +35,7 @@ fn sub_req(channel: &str) -> SubscribeRequest {
     SubscribeRequest { channel: channel.into(), ..Default::default() }
 }
 
-async fn next_pub(rx: &mut mpsc::Receiver<Reply>) -> socket_protocol::Publication {
+async fn next_pub(rx: &mut mpsc::Receiver<Reply>) -> manifold_protocol::Publication {
     loop {
         let reply = tokio::time::timeout(Duration::from_secs(1), rx.recv())
             .await
@@ -111,7 +111,7 @@ async fn transient_publish_skips_history() {
         .unwrap();
 
     let res = api
-        .history(&c, &socket_protocol::HistoryRequest {
+        .history(&c, &manifold_protocol::HistoryRequest {
             channel: "chat:room:9".into(),
             limit: 10,
             since: None,

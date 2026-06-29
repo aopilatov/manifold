@@ -13,8 +13,8 @@ use axum::{
 };
 use jsonwebtoken::{decode, encode, DecodingKey, EncodingKey, Header, Validation};
 use serde::{Deserialize, Serialize};
-use socket_core::api::ApiService;
-use socket_core::metrics::Metrics;
+use manifold_core::api::ApiService;
+use manifold_core::metrics::Metrics;
 use tower_http::services::{ServeDir, ServeFile};
 
 const COOKIE: &str = "admin_session";

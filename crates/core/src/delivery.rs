@@ -1,8 +1,8 @@
 //! Broker → hub bridge: the broker delivers incoming Replies (including from other nodes) to local subscribers.
 
 use crate::hub::Hub;
-use socket_broker::{ControlCommand, Delivery};
-use socket_protocol::Reply;
+use manifold_broker::{ControlCommand, Delivery};
+use manifold_protocol::Reply;
 use std::sync::Arc;
 
 pub struct HubDelivery {

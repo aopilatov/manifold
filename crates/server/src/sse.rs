@@ -18,8 +18,8 @@ use axum::{
 };
 use base64::Engine;
 use prost::Message as _;
-use socket_core::api::ApiService;
-use socket_protocol::{reply, Command, ConnectRequest, Reply};
+use manifold_core::api::ApiService;
+use manifold_protocol::{reply, Command, ConnectRequest, Reply};
 use tokio::sync::mpsc;
 use tokio_stream::wrappers::ReceiverStream;
 use tokio_stream::StreamExt;

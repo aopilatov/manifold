@@ -286,7 +286,7 @@ pub struct Telemetry {
 
 fn default_true() -> bool { true }
 fn default_log_level() -> String { "info".into() }
-fn default_prefix() -> String { "socket".into() }
+fn default_prefix() -> String { "manifold".into() }
 fn default_channels_claim() -> String { "channels".into() }
 
 #[derive(Debug, thiserror::Error)]
@@ -322,7 +322,7 @@ mod tests {
         // config.toml at the repo root ↔ serde structs haven't drifted.
         let cfg = Config::load(concat!(env!("CARGO_MANIFEST_DIR"), "/../../config.toml"))
             .expect("config.toml should parse");
-        assert_eq!(cfg.server.node_name, "socket-1");
+        assert_eq!(cfg.server.node_name, "manifold-1");
         assert!(cfg.namespaces.contains_key("chat"));
         assert_eq!(cfg.namespace("news:sports").history_size, 100);
         assert_eq!(cfg.namespace("chat:room:1").access.publish, AccessMode::Token);

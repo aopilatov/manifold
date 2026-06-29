@@ -1,7 +1,7 @@
 // docmd config (zero-config SSG). See docs/architecture.md, section 10.
 export default {
-  siteTitle: "Socket",
-  title: "Socket",
+  siteTitle: "Manifold",
+  title: "Manifold",
   description: "Configurable realtime engine (WebSocket pub/sub)",
   srcDir: ".",
   outputDir: "../dist-docs",

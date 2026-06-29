@@ -1,7 +1,7 @@
 // E2E: SDK ↔ real Rust server over WebSocket.
-// Runs against a live socket-server (smoke config, port 18000, secret dev-secret).
+// Runs against a live manifold-server (smoke config, port 18000, secret dev-secret).
 import crypto from "node:crypto";
-import { SocketClient } from "../dist/index.js";
+import { ManifoldClient } from "../dist/index.js";
 
 const SECRET = "dev-secret";
 const URL = "ws://127.0.0.1:18000/connection/websocket";
@@ -20,7 +20,7 @@ function mintJwt(payload, secret) {
 const token = mintJwt(
   {
     sub: "u-1",
-    aud: "socket",
+    aud: "manifold",
     channels: [{ match: "chat:room:*", allow: ["sub", "pub", "history", "presence"] }],
   },
   SECRET,
@@ -31,7 +31,7 @@ const fail = (m) => {
   process.exit(1);
 };
 
-const client = new SocketClient({ url: URL, getToken: async () => token });
+const client = new ManifoldClient({ url: URL, getToken: async () => token });
 
 const res = await client.connect().catch((e) => fail("connect: " + e.message));
 console.log("connected as", res.client);

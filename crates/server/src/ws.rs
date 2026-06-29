@@ -11,19 +11,20 @@ use axum::{
 };
 use futures::{SinkExt, StreamExt};
 use prost::Message as _;
-use socket_core::api::ApiService;
-use socket_protocol::{command, reply, Command, Reply};
+use manifold_core::api::ApiService;
+use manifold_protocol::{command, reply, Command, Reply};
 use tokio::sync::mpsc;
 
 pub async fn handler(State(api): State<Arc<ApiService>>, ws: WebSocketUpgrade) -> Response {
-    // Subprotocol negotiation: if the client offered socket.v1, select it (echoed in the response).
-    ws.protocols(["socket.v1"])
+    // Subprotocol negotiation: if the client offered manifold.v1, select it (echoed in the response).
+    ws.protocols(["manifold.v1"])
         .on_upgrade(move |socket| connection(api, socket))
 }
 
 async fn connection(api: Arc<ApiService>, socket: WebSocket) {
     let (mut sink, mut stream) = socket.split();
-    let (tx, mut rx) = mpsc::channel::<Reply>(256);
+    // Bounded outbound buffer (write_buffer_limit). Overflow => disconnect a slow/non-reading client.
+    let (tx, mut rx) = mpsc::channel::<Reply>(1024);
 
     // writer task: Reply → protobuf → binary WS frame
     let writer = tokio::spawn(async move {
@@ -50,7 +51,9 @@ async fn connection(api: Arc<ApiService>, socket: WebSocket) {
             Message::Binary(b) => {
                 if let Ok(cmd) = Command::decode(b.as_slice()) {
                     if let Some(reply) = api.handle_command(&client_id, cmd).await {
-                        if tx.send(reply).await.is_err() {
+                        // try_send (not .await): a client that doesn't drain its replies must not
+                        // block the read loop — disconnect it instead (slow-consumer policy).
+                        if tx.try_send(reply).is_err() {
                             break;
                         }
                     }

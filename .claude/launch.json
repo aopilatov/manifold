@@ -6,7 +6,7 @@
       "runtimeExecutable": "pnpm",
       "runtimeArgs": [
         "--filter",
-        "@socket/web",
+        "@manifold/web",
         "dev"
       ],
       "port": 5173
