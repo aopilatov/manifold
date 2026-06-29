@@ -19,7 +19,7 @@ description: Статус реализации по этапам
 | 7 | История + recovery (Redis Streams, offset/epoch) | ✅ |
 | 8 | События жизненного цикла + observability (Prometheus, tracing) | ✅ |
 | 9 | Admin UI (Mantine) + Prometheus | ✅ |
-| 10 | Docs (docmd) + автоген из `.proto`/config | 🚧 |
+| 10 | Docs (docmd) + автоген из `.proto`/config | ✅ |
 
 > Presence/история (6, 7) частично сделаны **in-memory** на этапе 1 (одна нода); полноценная
 > мультинодовая версия на Redis — этап 3+.
@@ -244,9 +244,32 @@ disconnect): получены все 4 события, `/metrics` содержи
 
 ---
 
-## Этап 10 — Документация (автоген) ⬜
+## Этап 10 — Документация (автоген) ✅
 
-_Не начат._ См. [архитектуру, раздел 10](/architecture). docmd + `architecture.md`/`progress.md`
-уже есть; нужен автоген `protocol.md`/`server-api.md`/`config-reference.md` из `.proto`/config. (Lua-публикация INCR+XADD+PUBLISH, ленивая
+Справочные доки генерируются из источников истины и собираются docmd в статику.
+
+**Генератор** (`docs/generate.mjs`, protobufjs-рефлексия + парсер конфига):
+
+- `proto/socket.proto` → `protocol.md` (клиентские сообщения с таблицами полей/oneof) +
+  `server-api.md` (gRPC-сервис `ServerApi` + `*Api*`-сообщения).
+- `config.toml` → `config-reference.md` (секции + ключ/пример/описание из инлайн-комментариев).
+
+**Пайплайн:** `pnpm docs:gen` (только генерация) / `docs:build` (gen → docmd build) /
+`docs:dev`. docmd собирает **6 страниц** + полнотекстовый поиск в `dist-docs/`.
+
+**Проверено:** `docs:build` → «Build complete. Generated 6 pages» ✔; **визуально через Preview** —
+сайт docmd (тёмная тема, навбар, автоген-страница «Протокол» с таблицей `Command`, поиск,
+оглавление). ✔
+
+**Упрощения (TODO):** описания в `config-reference` берутся из инлайн-комментариев (часть ключей
+без описания); нет глубокой документации семантики (рукописные гайды — отдельно).
+
+---
+
+## Итог
+
+Все 10 этапов реализованы и проверены (юнит/интеграционные тесты + живые e2e + визуальные
+скриншоты). Движок работает end-to-end: одна нода и мультинода (Redis), WS и SSE, клиентский SDK,
+Server API (HTTP+gRPC), события/метрики, admin UI, автодокументация. (Lua-публикация INCR+XADD+PUBLISH, ленивая
 SUBSCRIBE/UNSUBSCRIBE, XRANGE recovery, presence-хэш с TTL, control pub/sub, idempotency).
 Перенести историю/presence из in-memory hub в брокер.

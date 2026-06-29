@@ -23,7 +23,11 @@ server:
 web:
     pnpm web:dev
 
-# Документация (docmd dev)
+# Сгенерировать справочные доки из proto/config
+docs-gen:
+    pnpm docs:gen
+
+# Документация (автоген + docmd dev)
 docs:
     pnpm docs:dev
 

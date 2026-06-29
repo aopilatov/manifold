@@ -4,8 +4,24 @@
     {
       "name": "web",
       "runtimeExecutable": "pnpm",
-      "runtimeArgs": ["--filter", "@socket/web", "dev"],
+      "runtimeArgs": [
+        "--filter",
+        "@socket/web",
+        "dev"
+      ],
       "port": 5173
+    },
+    {
+      "name": "docs",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": [
+        "-y",
+        "serve",
+        "dist-docs",
+        "-l",
+        "4321"
+      ],
+      "port": 4321
     }
   ]
 }
