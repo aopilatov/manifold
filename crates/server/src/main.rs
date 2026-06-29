@@ -1,6 +1,7 @@
 //! Точка входа движка. Загружает конфиг, поднимает транспорты (WS/SSE), Server API (HTTP/gRPC),
 //! admin, health. Скелет: сейчас стартует health + WS-заглушку.
 
+mod admin;
 mod events;
 mod grpc_api;
 mod health;
@@ -101,8 +102,25 @@ async fn main() -> anyhow::Result<()> {
             .unwrap();
     });
 
-    // TODO(impl): admin, graceful shutdown (SIGTERM → drain).
-    let _ = tokio::try_join!(health, ws, http, grpc);
+    let mut tasks = vec![health, ws, http, grpc];
+
+    // Admin UI (третий контур: пароль → сессия)
+    if cfg.server.admin.enabled {
+        let listen = cfg.server.admin.listen.clone();
+        let local = listen.starts_with("127.0.0.1") || listen.starts_with("localhost");
+        if cfg.server.admin.password.is_empty() && !local {
+            panic!("admin: пустой пароль на публичном интерфейсе ({listen}) — отказ старта");
+        }
+        let admin_app = admin::router(api.clone(), cfg.server.admin.password.clone(), "web/dist");
+        tasks.push(tokio::spawn(async move {
+            let listener = tokio::net::TcpListener::bind(&listen).await.unwrap();
+            tracing::info!(%listen, "admin UI слушает");
+            axum::serve(listener, admin_app).await.unwrap();
+        }));
+    }
+
+    // TODO(impl): graceful shutdown (SIGTERM → drain).
+    futures::future::join_all(tasks).await;
     Ok(())
 }
 

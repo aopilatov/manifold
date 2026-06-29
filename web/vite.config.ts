@@ -6,7 +6,7 @@ export default defineConfig({
   server: {
     port: 5173,
     proxy: {
-      // dev: проксируем на admin-порт движка
+      // dev: проксируем на admin-порт движка (8003 по умолчанию из config.toml)
       "/admin": "http://127.0.0.1:8003",
     },
   },

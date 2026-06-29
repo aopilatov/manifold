@@ -18,7 +18,7 @@ description: Статус реализации по этапам
 | 6 | Presence (join/leave, список онлайн, TTL) | ✅ |
 | 7 | История + recovery (Redis Streams, offset/epoch) | ✅ |
 | 8 | События жизненного цикла + observability (Prometheus, tracing) | ✅ |
-| 9 | Admin UI (Mantine) + `$metrics` + Prometheus | ⬜ |
+| 9 | Admin UI (Mantine) + Prometheus | ✅ |
 | 10 | Docs (docmd) + автоген из `.proto`/config | 🚧 |
 
 > Presence/история (6, 7) частично сделаны **in-memory** на этапе 1 (одна нода); полноценная
@@ -217,8 +217,36 @@ disconnect): получены все 4 события, `/metrics` содержи
 
 ---
 
-## Этап 9 — Admin UI ⬜
+## Этап 9 — Admin UI ✅
 
-_Не начат._ См. [архитектуру, раздел 9](/architecture). Каркас `web/` (Mantine) уже есть. (Lua-публикация INCR+XADD+PUBLISH, ленивая
+Третий контур доступа: пароль → сессия (admin-JWT в httpOnly-cookie). Бэкенд — тонкие обёртки
+над `ApiService::api_*`; статика `web/dist` раздаётся тем же сервером.
+
+**Бэкенд** (`server/admin.rs`): `POST /admin/login`, `/admin/me`, `/admin/info` (метрики),
+`/admin/channels`, `/admin/presence`, `/admin/publish`, `/admin/disconnect`. Сессия — JWT,
+подписанный паролем; guard на всех эндпоинтах; insecure-default (пустой пароль на публичном
+интерфейсе → отказ старта).
+
+**Фронт** (`web/`, React + Mantine, Vite): логин → AppShell с разделами
+**Overview** (live-метрики, опрос `/admin/info` каждые 2с), **Channels** (список + presence по клику),
+**Publish** (форма). Клиент — `web/src/api.ts` (`credentials: include`).
+
+**Проверено:**
+
+- Бэкенд (curl): `401` без сессии, login `200` + cookie, неверный пароль `401`, `info`/`channels`/
+  `publish` под сессией, статика `/` → `200 text/html`. ✔
+- UI: `tsc` + `vite build` (779 модулей) ✔; **визуально через Preview** — логин → дашборд
+  (6 карточек метрик, навбар) → раздел Publish. ✔
+
+**Упрощения (TODO):** live-метрики через **опрос `/admin/info`**, а не догфудинг через
+`$metrics`-WS; разделы Connections/Namespaces/Metrics-графики не сделаны; SPA deep-link fallback
+отдаёт `404` (приложение state-based, грузится с `/`); OIDC — за швом `auth = "password"|"oidc"`.
+
+---
+
+## Этап 10 — Документация (автоген) ⬜
+
+_Не начат._ См. [архитектуру, раздел 10](/architecture). docmd + `architecture.md`/`progress.md`
+уже есть; нужен автоген `protocol.md`/`server-api.md`/`config-reference.md` из `.proto`/config. (Lua-публикация INCR+XADD+PUBLISH, ленивая
 SUBSCRIBE/UNSUBSCRIBE, XRANGE recovery, presence-хэш с TTL, control pub/sub, idempotency).
 Перенести историю/presence из in-memory hub в брокер.
