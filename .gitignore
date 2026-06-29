@@ -8,11 +8,11 @@ dist/
 dist-docs/
 .pnpm-store/
 
-# Env / секреты
+# Env / secrets
 .env
 .env.*
 
-# OS / редакторы
+# OS / editors
 .DS_Store
 *.log
 .idea/

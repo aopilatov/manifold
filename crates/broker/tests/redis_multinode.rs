@@ -1,5 +1,5 @@
-//! Мультинода против живого Redis: fan-out между нодами, recovery, presence.
-//! Если Redis недоступен — тесты пропускаются (не падают).
+//! Multi-node against a live Redis: cross-node fan-out, recovery, presence.
+//! If Redis is unavailable, the tests are skipped (they don't fail).
 
 use std::sync::Arc;
 use std::time::Duration;
@@ -45,20 +45,20 @@ fn uniq(suffix: &str) -> String {
 async fn cross_node_fanout() {
     let prefix = uniq("fanout");
     let Some((a, _ra)) = node(&prefix).await else {
-        eprintln!("redis недоступен — пропуск");
+        eprintln!("redis unavailable — skipping");
         return;
     };
     let (_b, mut rb) = node(&prefix).await.unwrap();
-    tokio::time::sleep(Duration::from_millis(200)).await; // дать pub/sub подняться
+    tokio::time::sleep(Duration::from_millis(200)).await; // let pub/sub come up
 
     let ch = "chat:room:xnode";
     a.publish(ch, b"hi-from-a".to_vec(), None, false, 100).await.unwrap();
 
-    // Нода B должна получить публикацию ноды A (через Redis pub/sub)
+    // Node B should receive node A's publication (via Redis pub/sub)
     let (gch, reply) = tokio::time::timeout(Duration::from_secs(3), rb.recv())
         .await
-        .expect("таймаут: кросс-нода не доставила")
-        .expect("канал закрыт");
+        .expect("timeout: cross-node did not deliver")
+        .expect("channel closed");
     assert_eq!(gch, ch);
     assert_eq!(pub_data(&reply).as_deref(), Some(&b"hi-from-a"[..]));
 }
@@ -75,15 +75,15 @@ async fn recovery_via_redis() {
     a.publish(ch, vec![2], None, false, 100).await.unwrap();
     a.publish(ch, vec![3], None, false, 100).await.unwrap();
 
-    // восстановиться с offset=1 (эпоха та же) → должны прийти offset 2 и 3
+    // recover from offset=1 (same epoch) → should receive offset 2 and 3
     let since = socket_protocol::StreamPosition { offset: 1, epoch: p1.epoch.clone() };
     let r = a.recover(ch, &since, 10).await.unwrap();
-    assert!(r.recovered, "разрыв в пределах истории");
+    assert!(r.recovered, "gap within history range");
     assert_eq!(r.publications.len(), 2);
     assert_eq!(r.publications[0].offset, 2);
     assert_eq!(r.publications[0].data, vec![2]);
 
-    // чужая эпоха → не восстановить
+    // foreign epoch → cannot recover
     let bad = socket_protocol::StreamPosition { offset: 1, epoch: "deadbeef".into() };
     let r2 = a.recover(ch, &bad, 10).await.unwrap();
     assert!(!r2.recovered);
@@ -101,7 +101,7 @@ async fn presence_shared_across_nodes() {
     let info = ClientInfo { user: "u1".into(), client: "c1".into(), conn_info: vec![], chan_info: vec![] };
     a.presence_add(ch, "c1", info, 60).await.unwrap();
 
-    // другая нода видит presence (общий Redis)
+    // the other node sees presence (shared Redis)
     let list = b.presence_list(ch).await.unwrap();
     assert!(list.contains_key("c1"));
     assert_eq!(list["c1"].user, "u1");

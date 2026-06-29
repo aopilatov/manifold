@@ -1,5 +1,5 @@
-//! Admin UI бэкенд (этап 9): третий контур доступа. Логин по паролю → сессия (admin-JWT в
-//! httpOnly-cookie). Эндпоинты — тонкие обёртки над `ApiService::api_*`. Раздаёт статику `web/dist`.
+//! Admin UI backend (stage 9): third access tier. Password login → session (admin JWT in an
+//! httpOnly cookie). Endpoints are thin wrappers over `ApiService::api_*`. Serves static `web/dist`.
 
 use std::sync::Arc;
 use std::time::{SystemTime, UNIX_EPOCH};
@@ -49,7 +49,7 @@ pub fn router(api: Arc<ApiService>, password: String, static_dir: &str) -> Route
         .fallback_service(spa)
 }
 
-// ─── сессия ───
+// ─── session ───
 
 fn now() -> u64 {
     SystemTime::now().duration_since(UNIX_EPOCH).map(|d| d.as_secs()).unwrap_or(0)

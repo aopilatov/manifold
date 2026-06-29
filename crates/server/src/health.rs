@@ -1,4 +1,4 @@
-//! Health/readiness + Prometheus `/metrics` (этап 8). На отдельном порту для k8s/LB.
+//! Health/readiness + Prometheus `/metrics` (stage 8). On a separate port for k8s/LB.
 
 use std::sync::Arc;
 
@@ -21,7 +21,7 @@ async fn liveness() -> StatusCode {
 }
 
 async fn readiness() -> StatusCode {
-    // TODO(impl): 503 при дренаже (graceful shutdown) или недоступном Redis.
+    // TODO(impl): 503 while draining (graceful shutdown) or when Redis is unavailable.
     StatusCode::OK
 }
 

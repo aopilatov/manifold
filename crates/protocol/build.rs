@@ -1,7 +1,7 @@
 use std::env;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    // Используем вендоренный protoc — система может его не иметь.
+    // Use the vendored protoc — the system may not have it.
     if let Ok(protoc) = protoc_bin_vendored::protoc_bin_path() {
         env::set_var("PROTOC", protoc);
     }

@@ -1,275 +1,275 @@
 ---
-title: Прогресс
-description: Статус реализации по этапам
+title: Progress
+description: Implementation status by stage
 ---
 
-# Прогресс реализации
+# Implementation progress
 
-Этапы — по плану из [архитектуры](/architecture) (раздел 13). Статусы:
-✅ готово · 🚧 в работе · ⬜ не начато.
+Stages follow the plan in the [architecture](/architecture) (section 13). Statuses:
+✅ done · 🚧 in progress · ⬜ not started.
 
-| # | Этап | Статус |
+| # | Stage | Status |
 |---|------|--------|
-| 1 | Ядро одной ноды (WS-коннект, JWT, sub/unsub по glob, in-memory hub) + health/shutdown | ✅ |
-| 2 | Клиентский SDK (`client-ts`): транспорт, реестр подписок, реконнект | ✅ |
-| 3 | Broker-абстракция + Redis → мультинода (pub/sub fan-out) | ✅ |
-| 4 | SSE-транспорт (фолбэк) в сервере и SDK | ✅ |
-| 5 | Server API (HTTP + gRPC), единый `ApiService`, идемпотентность, control-канал | ✅ |
-| 6 | Presence (join/leave, список онлайн, TTL) | ✅ |
-| 7 | История + recovery (Redis Streams, offset/epoch) | ✅ |
-| 8 | События жизненного цикла + observability (Prometheus, tracing) | ✅ |
+| 1 | Single-node core (WS connect, JWT, sub/unsub by glob, in-memory hub) + health/shutdown | ✅ |
+| 2 | Client SDK (`client-ts`): transport, subscription registry, reconnect | ✅ |
+| 3 | Broker abstraction + Redis → multi-node (pub/sub fan-out) | ✅ |
+| 4 | SSE transport (fallback) in server and SDK | ✅ |
+| 5 | Server API (HTTP + gRPC), unified `ApiService`, idempotency, control channel | ✅ |
+| 6 | Presence (join/leave, online list, TTL) | ✅ |
+| 7 | History + recovery (Redis Streams, offset/epoch) | ✅ |
+| 8 | Lifecycle events + observability (Prometheus, tracing) | ✅ |
 | 9 | Admin UI (Mantine) + Prometheus | ✅ |
-| 10 | Docs (docmd) + автоген из `.proto`/config | ✅ |
+| 10 | Docs (docmd) + autogen from `.proto`/config | ✅ |
 
-> Presence/история (6, 7) частично сделаны **in-memory** на этапе 1 (одна нода); полноценная
-> мультинодовая версия на Redis — этап 3+.
+> Presence/history (6, 7) were partially done **in-memory** in stage 1 (single node); the full
+> multi-node version on Redis — stage 3+.
 
 ---
 
-## Этап 1 — Ядро одной ноды ✅
+## Stage 1 — Single-node core ✅
 
-**Реализовано (рабочая логика, не скелет):**
+**Implemented (working logic, not a skeleton):**
 
-| Компонент | Файл | Что делает |
+| Component | File | What it does |
 |---|---|---|
-| JWT-валидация | [`core/auth.rs`](https://github.com) | HMAC HS256/384/512, claims с capability-паттернами |
-| Glob + доступ | `core/auth.rs`, `core/namespace.rs` | `*`/`**` матчинг, цепочка namespace↔JWT |
-| Hub | `core/hub.rs` | offset/epoch, история (ring-buffer), presence, локальный fan-out |
-| Оркестратор | `core/api.rs` | connect (восстановление subs за 1 RTT), subscribe/unsubscribe/publish/presence/history, cleanup |
-| WS-транспорт | `server/ws.rs` | handshake → JWT → writer-задача → цикл Command→Reply (protobuf) |
-| Boot | `server/main.rs` | конфиг → Hub → ApiService → роутер + health |
+| JWT validation | [`core/auth.rs`](https://github.com) | HMAC HS256/384/512, claims with capability patterns |
+| Glob + access | `core/auth.rs`, `core/namespace.rs` | `*`/`**` matching, namespace↔JWT chain |
+| Hub | `core/hub.rs` | offset/epoch, history (ring-buffer), presence, local fan-out |
+| Orchestrator | `core/api.rs` | connect (restore subs in 1 RTT), subscribe/unsubscribe/publish/presence/history, cleanup |
+| WS transport | `server/ws.rs` | handshake → JWT → writer task → Command→Reply loop (protobuf) |
+| Boot | `server/main.rs` | config → Hub → ApiService → router + health |
 
-**Тесты (10, все зелёные):**
+**Tests (10, all green):**
 
-- `publish_fans_out_to_subscribers` — публикация доходит с `offset=1`
-- `subscribe_denied_without_grant` — отказ без нужного паттерна в JWT
-- `public_namespace_subscribes_without_token` — `news` (public) без токена
-- `client_publish_to_public_feed_is_denied` — `publish=off` режет клиентскую публикацию
-- `transient_publish_skips_history` — typing не пишется в историю
-- `recovery_returns_missed_publications` — догон пропущенных offset, `recovered=true`
-- + 3 glob-теста + парсинг `config.toml`
+- `publish_fans_out_to_subscribers` — a publication arrives with `offset=1`
+- `subscribe_denied_without_grant` — rejected without the required pattern in the JWT
+- `public_namespace_subscribes_without_token` — `news` (public) without a token
+- `client_publish_to_public_feed_is_denied` — `publish=off` blocks client-side publishing
+- `transient_publish_skips_history` — typing is not written to history
+- `recovery_returns_missed_publications` — catch-up of missed offsets, `recovered=true`
+- + 3 glob tests + `config.toml` parsing
 
-**Smoke:** бинарь стартует, `/health` и `/ready` → 200.
+**Smoke:** the binary starts, `/health` and `/ready` → 200.
 
-**Осталось скелетом (`TODO`) для следующих этапов:**
+**Remaining as a skeleton (`TODO`) for the next stages:**
 
-- WS: проверка Origin/subprotocol, `handshake_timeout`, `write_buffer_limit`, ping/pong-таймауты
-- `RefreshRequest` / `SubRefreshRequest` (вариант B)
+- WS: Origin/subprotocol check, `handshake_timeout`, `write_buffer_limit`, ping/pong timeouts
+- `RefreshRequest` / `SubRefreshRequest` (variant B)
 - graceful shutdown (SIGTERM → drain → `Disconnect{reconnect:true}`)
 
-**Известное ограничение (снято на этапе 2):** реальный WS round-trip теперь покрыт e2e-тестом
-SDK↔сервер (`packages/client-ts/test/e2e.mjs`). Cargo-тесты ядра по-прежнему через `ApiService`.
+**Known limitation (lifted in stage 2):** the real WS round-trip is now covered by an e2e test
+SDK↔server (`packages/client-ts/test/e2e.mjs`). The core Cargo tests still go through `ApiService`.
 
 ---
 
-## Этап 2 — Клиентский SDK ✅
+## Stage 2 — Client SDK ✅
 
-**Реализовано:**
+**Implemented:**
 
-| Пакет | Что сделано |
+| Package | What was done |
 |---|---|
-| `packages/proto-gen` | protobuf-es типы сгенерированы из `proto/socket.proto` (buf), собираются в `dist` |
-| `packages/client-ts` | полный SDK: транспорт WS, кодек protobuf, корреляция Command↔Reply по id |
+| `packages/proto-gen` | protobuf-es types generated from `proto/socket.proto` (buf), built into `dist` |
+| `packages/client-ts` | full SDK: WS transport, protobuf codec, Command↔Reply correlation by id |
 
-**Возможности SDK** (`SocketClient` / `Subscription`):
+**SDK capabilities** (`SocketClient` / `Subscription`):
 
-- Реестр подписок как источник истины; восстановление **всех подписок за 1 RTT** через `Connect.subs`.
-- Реконнект с джиттер-бэкоффом (`jitteredDelay`), переиспользование кэшированного JWT.
-- Recovery: `recover`/`position`, догон пропущенного, обновление позиции по `offset`.
-- Refresh токена по таймеру (вариант B), ping по `pingIntervalMs`.
+- Subscription registry as the source of truth; restoring **all subscriptions in 1 RTT** via `Connect.subs`.
+- Reconnect with jittered backoff (`jitteredDelay`), reuse of the cached JWT.
+- Recovery: `recover`/`position`, catch-up of missed messages, position update by `offset`.
+- Token refresh on a timer (variant B), ping by `pingIntervalMs`.
 - API: `connect`, `newSubscription`, `sub.on(publication|join|leave|...)`, `subscribe`/`unsubscribe`/`publish`/`presence`.
-- Безопасный скип неизвестных push-вариантов (через `switch` по `case`).
+- Safe skipping of unknown push variants (via `switch` over `case`).
 
-**Тесты:**
+**Tests:**
 
-- `test/backoff.test.ts` — границы и распределение джиттера (2 теста, ✔).
-- `test/e2e.mjs` — **живой round-trip против Rust-сервера**: connect → subscribe → publish →
-  приём `hello-e2e` → presence `[smoke-1]`. ✔
+- `test/backoff.test.ts` — jitter bounds and distribution (2 tests, ✔).
+- `test/e2e.mjs` — **live round-trip against the Rust server**: connect → subscribe → publish →
+  receive `hello-e2e` → presence `[smoke-1]`. ✔
 
-**Побочно:** в сервере реализовано согласование WebSocket-subprotocol `socket.v1`
-(`ws.protocols([...])`) — часть `require_subprotocol`; без него undici-WebSocket рвал коннект.
+**Side effect:** the server got WebSocket-subprotocol negotiation `socket.v1`
+(`ws.protocols([...])`) — part of `require_subprotocol`; without it undici-WebSocket dropped the connection.
 
 ---
 
-## Этап 3 — Redis-брокер / мультинода ✅
+## Stage 3 — Redis broker / multi-node ✅
 
-Состояние каналов (offset/epoch/история/presence) вынесено из hub в `Broker`. Две реализации
-за одним трейтом; hub теперь — только локальная маршрутизация.
+Channel state (offset/epoch/history/presence) was moved out of the hub into `Broker`. Two
+implementations behind one trait; the hub is now just local routing.
 
-| Реализация | Где | Что |
+| Implementation | Where | What |
 |---|---|---|
-| `MemoryBroker` | `broker/memory.rs` | одна нода, всё в памяти (для `redis.enabled=false` и тестов) |
-| `RedisBroker` | `broker/redis_broker.rs` | мультинода: Lua-публикация, pub/sub fan-out, presence в Redis |
+| `MemoryBroker` | `broker/memory.rs` | single node, everything in memory (for `redis.enabled=false` and tests) |
+| `RedisBroker` | `broker/redis_broker.rs` | multi-node: Lua publish, pub/sub fan-out, presence in Redis |
 
 **RedisBroker:**
 
-- **publish** — Lua атомарно `INCR seq` + `XADD hist` (id = `offset-0`), затем `PUBLISH` сериализованного
-  Push на `ch:{channel}`. offset/epoch — из Redis (глобальные на кластер).
-- **fan-out** — фоновая задача держит pub/sub и `PSUBSCRIBE {prefix}:ch:*`, отдаёт пришедшее
-  (в т.ч. с других нод) локальным подписчикам через трейт `Delivery` (инверсия: брокер не знает hub).
-- **recovery** — `XRANGE` с `(offset-0`, сверка epoch.
-- **presence** — ZSET `pz:{ch}` (score = expire_at) + HASH `ph:{ch}`; TTL и очистка протухших.
+- **publish** — Lua atomically `INCR seq` + `XADD hist` (id = `offset-0`), then `PUBLISH` the serialized
+  Push to `ch:{channel}`. offset/epoch — from Redis (cluster-global).
+- **fan-out** — a background task holds the pub/sub and `PSUBSCRIBE {prefix}:ch:*`, delivering what arrives
+  (including from other nodes) to local subscribers via the `Delivery` trait (inversion: the broker does not know the hub).
+- **recovery** — `XRANGE` from `(offset-0`, epoch comparison.
+- **presence** — ZSET `pz:{ch}` (score = expire_at) + HASH `ph:{ch}`; TTL and cleanup of expired entries.
 
-**Инверсия доставки:** `Delivery` объявлен в брокере, реализован в core (`HubDelivery` → `hub.fan_out`),
-чтобы брокер не зависел от hub. Выбор брокера — по `[redis].enabled` в конфиге.
+**Delivery inversion:** `Delivery` is declared in the broker, implemented in core (`HubDelivery` → `hub.fan_out`),
+so the broker does not depend on the hub. Broker choice — by `[redis].enabled` in the config.
 
-**Тесты (живой Redis, пропускаются если недоступен):**
+**Tests (live Redis, skipped if unavailable):**
 
-- `cross_node_fanout` — publish на ноде A → доставлено на ноду B ✔
-- `recovery_via_redis` — `XRANGE` догон offset 2,3; чужая epoch → `recovered=false` ✔
-- `presence_shared_across_nodes` — presence общий между нодами ✔
-- **`test/e2e_multinode.mjs`** — два реальных процесса сервера + SDK: публикация через node-1 →
-  приём подписчиком на node-2. **E2E MULTINODE OK** ✔
+- `cross_node_fanout` — publish on node A → delivered on node B ✔
+- `recovery_via_redis` — `XRANGE` catch-up of offsets 2,3; foreign epoch → `recovered=false` ✔
+- `presence_shared_across_nodes` — presence shared across nodes ✔
+- **`test/e2e_multinode.mjs`** — two real server processes + SDK: publish via node-1 →
+  receipt by a subscriber on node-2. **E2E MULTINODE OK** ✔
 
-**Побочно:** в core `ApiService` стал async, добавлен `ApiService::in_memory(cfg)` для одной ноды.
+**Side effect:** in core `ApiService` became async, added `ApiService::in_memory(cfg)` for a single node.
 
-**Осознанные упрощения (TODO след. этапов):**
+**Deliberate simplifications (TODO for later stages):**
 
-- **PSUBSCRIBE-all** вместо ленивой per-channel подписки (каждая нода получает все публикации и
-  фильтрует локально). Ленивый `SUBSCRIBE`/`UNSUBSCRIBE` по первому/последнему подписчику — оптимизация.
-- **Recovery boundary:** нет явной дедупликации на стыке «история ↔ live» (возможен дубль одной
-  публикации при подписке); строгий no-gap/dedup — рефайнмент.
-- **Presence flap:** `Leave` шлётся сразу при разрыве (TTL защищает список от «призраков», но
-  гашение флапа `Leave` отложенным таймером — TODO).
-- **idempotency / control-канал** (для Server API disconnect) — этап 5.
-
----
-
-## Этап 4 — SSE-транспорт ✅
-
-Фолбэк для сетей, режущих WS. Расщеплённая сессия, переиспользует тот же hub/ApiService.
-
-**Сервер** (`server/sse.rs`):
-
-- `GET /connection/sse?token=JWT` — downstream (EventSource): аутентификация, сессия в hub,
-  стрим `Reply` как **base64(protobuf)** в `data:`. Первое событие — `ConnectResult` (несёт session_id).
-- `POST /connection/sse/emit` (`X-Session-Id`, тело — protobuf `Command`) — upstream; ответ уходит
-  вниз по SSE той же сессии (через `tx` в `ConnHandle`).
-- Снятие сессии при разрыве — `CleanupGuard` (Drop → `api.cleanup`).
-- Включается `[server.sse].enabled`; делит слушатель с WS.
-
-**SDK** (`client-ts`): транспорт вынесен за интерфейс `Transport` (`transport.ts`):
-
-- `WsTransport` — двунаправленный сокет (коннект — Connect-командой, батч-восстановление подписок).
-- `SseTransport` — EventSource (вниз) + `fetch` POST (вверх); коннект выполняет GET, подписки
-  восстанавливаются индивидуально. `transport: "ws" | "sse"` в опциях.
-- `client.ts` стал транспорт-агностичным.
-
-**Тест:** `test/e2e_sse.mjs` — против реального сервера через SSE: connect → subscribe → publish →
-приём `hello-sse`. **E2E SSE OK** ✔ (в Node — полифилл `EventSource` из undici; в браузере глобальный).
-
-**Упрощения (TODO):** нет нативного resume по `Last-Event-ID` (реконнект — общий клиентский);
-`require_subprotocol`/origin-проверки для SSE отдельно не применяются.
+- **PSUBSCRIBE-all** instead of lazy per-channel subscription (each node receives all publications and
+  filters locally). Lazy `SUBSCRIBE`/`UNSUBSCRIBE` by first/last subscriber — an optimization.
+- **Recovery boundary:** no explicit deduplication at the "history ↔ live" seam (a single publication may be
+  duplicated on subscribe); strict no-gap/dedup — a refinement.
+- **Presence flap:** `Leave` is sent immediately on a break (TTL protects the list from "ghosts", but
+  damping the `Leave` flap with a deferred timer — TODO).
+- **idempotency / control channel** (for Server API disconnect) — stage 5.
 
 ---
 
-## Этап 5 — Server API (HTTP + gRPC) ✅
+## Stage 4 — SSE transport ✅
 
-Доверенная server-to-server сторона. Оба транспорта — тонкие обёртки над `ApiService::api_*`.
-Auth — API-ключ (`Authorization: apikey <key>` + `allow` метода).
+A fallback for networks that cut WS. A split session, reusing the same hub/ApiService.
 
-**Методы:** `publish` (идемпотентный), `broadcast`, `presence`, `presence_stats`, `history`,
+**Server** (`server/sse.rs`):
+
+- `GET /connection/sse?token=JWT` — downstream (EventSource): authentication, session in the hub,
+  streaming `Reply` as **base64(protobuf)** in `data:`. First event — `ConnectResult` (carries session_id).
+- `POST /connection/sse/emit` (`X-Session-Id`, body — protobuf `Command`) — upstream; the reply goes
+  back down the SSE of the same session (via `tx` in `ConnHandle`).
+- Session teardown on a break — `CleanupGuard` (Drop → `api.cleanup`).
+- Enabled by `[server.sse].enabled`; shares the listener with WS.
+
+**SDK** (`client-ts`): the transport was extracted behind a `Transport` interface (`transport.ts`):
+
+- `WsTransport` — a bidirectional socket (connect — via the Connect command, batch subscription restore).
+- `SseTransport` — EventSource (down) + `fetch` POST (up); connect runs a GET, subscriptions
+  are restored individually. `transport: "ws" | "sse"` in the options.
+- `client.ts` became transport-agnostic.
+
+**Test:** `test/e2e_sse.mjs` — against a real server over SSE: connect → subscribe → publish →
+receive `hello-sse`. **E2E SSE OK** ✔ (in Node — an `EventSource` polyfill from undici; in the browser the global one).
+
+**Simplifications (TODO):** no native resume via `Last-Event-ID` (reconnect — the common client one);
+`require_subprotocol`/origin checks for SSE are not applied separately.
+
+---
+
+## Stage 5 — Server API (HTTP + gRPC) ✅
+
+The trusted server-to-server side. Both transports — thin wrappers over `ApiService::api_*`.
+Auth — API key (`Authorization: apikey <key>` + method `allow`).
+
+**Methods:** `publish` (idempotent), `broadcast`, `presence`, `presence_stats`, `history`,
 `channels`, `info`, `disconnect`, `unsubscribe`, `user_online`. (`history_remove`, server-side
-`subscribe`, `batch`, `publish_stream` — заглушки `TODO`.)
+`subscribe`, `batch`, `publish_stream` — `TODO` stubs.)
 
-| Слой | Где |
+| Layer | Where |
 |---|---|
 | HTTP/JSON | `server/http_api.rs` (`POST /api/<method>`, `data` — base64) |
-| gRPC | `server/grpc_api.rs` (tonic, сервис `socket.v1.ServerApi`) |
-| Идемпотентность | `Broker.idempotency_get/put` (Redis `SET EX` / память) |
-| Control-канал | `Broker.control_publish` + `Delivery.control` (Redis `{prefix}:control`) |
+| gRPC | `server/grpc_api.rs` (tonic, service `socket.v1.ServerApi`) |
+| Idempotency | `Broker.idempotency_get/put` (Redis `SET EX` / memory) |
+| Control channel | `Broker.control_publish` + `Delivery.control` (Redis `{prefix}:control`) |
 
-**Идемпотентность:** `idempotency_key` → закэшированная позиция; повторный publish не создаёт
-новый offset. **Control-канал:** `disconnect`/`unsubscribe` адресуются соединению на любой ноде —
-команда летит в Redis, нода-владелец её исполняет.
+**Idempotency:** `idempotency_key` → cached position; a repeated publish does not create a
+new offset. **Control channel:** `disconnect`/`unsubscribe` are addressed to a connection on any node —
+the command flies into Redis, the node owning the connection executes it.
 
-**Тесты (живой Redis, 2 ноды + SDK):**
+**Tests (live Redis, 2 nodes + SDK):**
 
-- `test/e2e_serverapi.mjs` — HTTP publish на node-1 → приём подписчиком на node-2; HTTP presence
-  видит подписчика; **HTTP disconnect по user → кросс-нодовый разрыв** ✔
-- `test/e2e_grpc.mjs` — gRPC `Publish` → WS-подписчик получает сообщение ✔
-- Идемпотентность (два publish с одним ключом → один offset) и `401` на неверный ключ — проверены ✔
+- `test/e2e_serverapi.mjs` — HTTP publish on node-1 → receipt by a subscriber on node-2; HTTP presence
+  sees the subscriber; **HTTP disconnect by user → cross-node break** ✔
+- `test/e2e_grpc.mjs` — gRPC `Publish` → WS subscriber receives the message ✔
+- Idempotency (two publishes with one key → one offset) and `401` on a wrong key — verified ✔
 
-**Упрощения (TODO):** `user_online`/`info` — локальные (без кластерной агрегации через реестр нод);
-gRPC-методы `subscribe`/`batch`/`publish_stream`/`history_remove` — заглушки.
+**Simplifications (TODO):** `user_online`/`info` — local (without cluster aggregation via the node registry);
+gRPC methods `subscribe`/`batch`/`publish_stream`/`history_remove` — stubs.
 
 ---
 
-## Этап 8 — События жизненного цикла + observability ✅
+## Stage 8 — Lifecycle events + observability ✅
 
-**События жизненного цикла** (`[events]`): `connected`/`disconnected`/`subscribed`/`unsubscribed`
-→ прикладной бэкенд (НЕ авторизация). За трейтом `EventSink` (core), HTTP-реализация
-`HttpEventSink` (server, reqwest, fire-and-forget POST, фильтр по типам).
+**Lifecycle events** (`[events]`): `connected`/`disconnected`/`subscribed`/`unsubscribed`
+→ the application backend (NOT authorization). Behind the `EventSink` trait (core), HTTP implementation
+`HttpEventSink` (server, reqwest, fire-and-forget POST, filter by types).
 
 **Observability:**
 
-- **Prometheus** `/metrics` (на health-порту): `socket_connections`, `socket_channels` (gauge),
+- **Prometheus** `/metrics` (on the health port): `socket_connections`, `socket_channels` (gauge),
   `socket_messages_published_total`, `socket_subscriptions_total`,
-  `socket_connections_opened/closed_total` (counter). Счётчики — атомарные в `core/metrics.rs`,
-  без зависимости от Prometheus; экспозиция формируется в server.
-- **JSON-логи** — по `[telemetry].log_format = "json"`.
+  `socket_connections_opened/closed_total` (counter). Counters — atomic in `core/metrics.rs`,
+  with no dependency on Prometheus; the exposition is built in the server.
+- **JSON logs** — via `[telemetry].log_format = "json"`.
 
-**Тест:** `test/e2e_events.mjs` — приёмник вебхуков + клиент (connect→subscribe→unsubscribe→
-disconnect): получены все 4 события, `/metrics` содержит счётчики. ✔
+**Test:** `test/e2e_events.mjs` — a webhook receiver + client (connect→subscribe→unsubscribe→
+disconnect): all 4 events received, `/metrics` contains the counters. ✔
 
-**Упрощения (TODO):** OTLP-трейсинг (`tracing_enabled`/`otlp_endpoint`) не подключён — тяжёлые
-зависимости, отложено; события — per-event POST (без батчинга/ретраев).
-
----
-
-## Этап 9 — Admin UI ✅
-
-Третий контур доступа: пароль → сессия (admin-JWT в httpOnly-cookie). Бэкенд — тонкие обёртки
-над `ApiService::api_*`; статика `web/dist` раздаётся тем же сервером.
-
-**Бэкенд** (`server/admin.rs`): `POST /admin/login`, `/admin/me`, `/admin/info` (метрики),
-`/admin/channels`, `/admin/presence`, `/admin/publish`, `/admin/disconnect`. Сессия — JWT,
-подписанный паролем; guard на всех эндпоинтах; insecure-default (пустой пароль на публичном
-интерфейсе → отказ старта).
-
-**Фронт** (`web/`, React + Mantine, Vite): логин → AppShell с разделами
-**Overview** (live-метрики, опрос `/admin/info` каждые 2с), **Channels** (список + presence по клику),
-**Publish** (форма). Клиент — `web/src/api.ts` (`credentials: include`).
-
-**Проверено:**
-
-- Бэкенд (curl): `401` без сессии, login `200` + cookie, неверный пароль `401`, `info`/`channels`/
-  `publish` под сессией, статика `/` → `200 text/html`. ✔
-- UI: `tsc` + `vite build` (779 модулей) ✔; **визуально через Preview** — логин → дашборд
-  (6 карточек метрик, навбар) → раздел Publish. ✔
-
-**Упрощения (TODO):** live-метрики через **опрос `/admin/info`**, а не догфудинг через
-`$metrics`-WS; разделы Connections/Namespaces/Metrics-графики не сделаны; SPA deep-link fallback
-отдаёт `404` (приложение state-based, грузится с `/`); OIDC — за швом `auth = "password"|"oidc"`.
+**Simplifications (TODO):** OTLP tracing (`tracing_enabled`/`otlp_endpoint`) is not wired up — heavy
+dependencies, deferred; events — per-event POST (without batching/retries).
 
 ---
 
-## Этап 10 — Документация (автоген) ✅
+## Stage 9 — Admin UI ✅
 
-Справочные доки генерируются из источников истины и собираются docmd в статику.
+The third access perimeter: password → session (admin JWT in an httpOnly cookie). The backend — thin wrappers
+over `ApiService::api_*`; static `web/dist` is served by the same server.
 
-**Генератор** (`docs/generate.mjs`, protobufjs-рефлексия + парсер конфига):
+**Backend** (`server/admin.rs`): `POST /admin/login`, `/admin/me`, `/admin/info` (metrics),
+`/admin/channels`, `/admin/presence`, `/admin/publish`, `/admin/disconnect`. Session — a JWT
+signed with the password; guard on all endpoints; insecure-default (empty password on a public
+interface → refuses to start).
 
-- `proto/socket.proto` → `protocol.md` (клиентские сообщения с таблицами полей/oneof) +
-  `server-api.md` (gRPC-сервис `ServerApi` + `*Api*`-сообщения).
-- `config.toml` → `config-reference.md` (секции + ключ/пример/описание из инлайн-комментариев).
+**Frontend** (`web/`, React + Mantine, Vite): login → AppShell with sections
+**Overview** (live metrics, polling `/admin/info` every 2s), **Channels** (list + presence on click),
+**Publish** (form). Client — `web/src/api.ts` (`credentials: include`).
 
-**Пайплайн:** `pnpm docs:gen` (только генерация) / `docs:build` (gen → docmd build) /
-`docs:dev`. docmd собирает **6 страниц** + полнотекстовый поиск в `dist-docs/`.
+**Verified:**
 
-**Проверено:** `docs:build` → «Build complete. Generated 6 pages» ✔; **визуально через Preview** —
-сайт docmd (тёмная тема, навбар, автоген-страница «Протокол» с таблицей `Command`, поиск,
-оглавление). ✔
+- Backend (curl): `401` without a session, login `200` + cookie, wrong password `401`, `info`/`channels`/
+  `publish` under a session, static `/` → `200 text/html`. ✔
+- UI: `tsc` + `vite build` (779 modules) ✔; **visually via Preview** — login → dashboard
+  (6 metric cards, navbar) → Publish section. ✔
 
-**Упрощения (TODO):** описания в `config-reference` берутся из инлайн-комментариев (часть ключей
-без описания); нет глубокой документации семантики (рукописные гайды — отдельно).
+**Simplifications (TODO):** live metrics via **polling `/admin/info`**, not dogfooding through
+`$metrics`-WS; the Connections/Namespaces/Metrics-charts sections are not done; SPA deep-link fallback
+returns `404` (the app is state-based, loads from `/`); OIDC — behind the `auth = "password"|"oidc"` seam.
 
 ---
 
-## Итог
+## Stage 10 — Documentation (autogen) ✅
 
-Все 10 этапов реализованы и проверены (юнит/интеграционные тесты + живые e2e + визуальные
-скриншоты). Движок работает end-to-end: одна нода и мультинода (Redis), WS и SSE, клиентский SDK,
-Server API (HTTP+gRPC), события/метрики, admin UI, автодокументация. (Lua-публикация INCR+XADD+PUBLISH, ленивая
-SUBSCRIBE/UNSUBSCRIBE, XRANGE recovery, presence-хэш с TTL, control pub/sub, idempotency).
-Перенести историю/presence из in-memory hub в брокер.
+The reference docs are generated from sources of truth and built by docmd into static output.
+
+**Generator** (`docs/generate.mjs`, protobufjs reflection + a config parser):
+
+- `proto/socket.proto` → `protocol.md` (client messages with field/oneof tables) +
+  `server-api.md` (gRPC service `ServerApi` + `*Api*` messages).
+- `config.toml` → `config-reference.md` (sections + key/example/description from inline comments).
+
+**Pipeline:** `pnpm docs:gen` (generation only) / `docs:build` (gen → docmd build) /
+`docs:dev`. docmd builds **6 pages** + full-text search into `dist-docs/`.
+
+**Verified:** `docs:build` → "Build complete. Generated 6 pages" ✔; **visually via Preview** —
+the docmd site (dark theme, navbar, autogen page "Protocol" with the `Command` table, search,
+table of contents). ✔
+
+**Simplifications (TODO):** descriptions in `config-reference` come from inline comments (some keys
+without a description); no deep documentation of semantics (handwritten guides — separately).
+
+---
+
+## Summary
+
+All 10 stages are implemented and verified (unit/integration tests + live e2e + visual
+screenshots). The engine works end-to-end: single node and multi-node (Redis), WS and SSE, client SDK,
+Server API (HTTP+gRPC), events/metrics, admin UI, auto-documentation. (Lua publish INCR+XADD+PUBLISH, lazy
+SUBSCRIBE/UNSUBSCRIBE, XRANGE recovery, presence hash with TTL, control pub/sub, idempotency).
+Move history/presence out of the in-memory hub into the broker.

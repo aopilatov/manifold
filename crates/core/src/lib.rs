@@ -1,5 +1,5 @@
-//! Ядро движка: конфиг, auth (JWT + glob), hub (реестр соединений/каналов), namespace-политика,
-//! единый `ApiService` (за ним стоят и WS-команды, и HTTP/gRPC Server API).
+//! Engine core: config, auth (JWT + glob), hub (registry of connections/channels), namespace policy,
+//! a single `ApiService` (backing both WS commands and the HTTP/gRPC Server API).
 
 pub mod api;
 pub mod auth;

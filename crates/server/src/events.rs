@@ -1,4 +1,4 @@
-//! HTTP-вебхук событий жизненного цикла (этап 8). Fire-and-forget POST на `[events].endpoint`.
+//! HTTP webhook for lifecycle events (stage 8). Fire-and-forget POST to `[events].endpoint`.
 
 use std::collections::HashSet;
 
@@ -18,7 +18,7 @@ impl HttpEventSink {
 
 impl EventSink for HttpEventSink {
     fn emit(&self, event: LifecycleEvent) {
-        // фильтр по сконфигурированным типам (пусто = все)
+        // filter by configured types (empty = all)
         if !self.types.is_empty() && !self.types.contains(&event.kind) {
             return;
         }

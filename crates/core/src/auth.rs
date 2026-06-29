@@ -1,12 +1,12 @@
-//! Аутентификация клиента: проверка connection JWT и capability-паттернов (glob `*`/`**`).
+//! Client authentication: validating the connection JWT and capability patterns (glob `*`/`**`).
 //!
-//! Токены выдаёт ВНЕШНИЙ бэкенд — движок только проверяет подпись и матчит каналы.
+//! Tokens are issued by an EXTERNAL backend — the engine only verifies the signature and matches channels.
 
 use crate::config::Jwt;
 use jsonwebtoken::{decode, Algorithm, DecodingKey, Validation};
 use serde::Deserialize;
 
-/// Claims connection JWT. Поле `channels` — список разрешённых glob-паттернов с правами.
+/// Connection JWT claims. The `channels` field is a list of allowed glob patterns with permissions.
 #[derive(Debug, Clone, Deserialize)]
 pub struct Claims {
     pub sub: String,
@@ -34,7 +34,7 @@ pub enum AuthError {
     Invalid(String),
 }
 
-/// Проверка подписи connection JWT (этап 1: HMAC HS256/384/512; RSA/JWKS — TODO).
+/// Verify the connection JWT signature (stage 1: HMAC HS256/384/512; RSA/JWKS is TODO).
 pub fn validate_jwt(token: &str, cfg: &Jwt) -> Result<Claims, AuthError> {
     let alg = match cfg.algorithm.as_str() {
         "HS256" => Algorithm::HS256,
@@ -45,7 +45,7 @@ pub fn validate_jwt(token: &str, cfg: &Jwt) -> Result<Claims, AuthError> {
     let secret = cfg.hmac_secret.as_ref().ok_or(AuthError::MissingSecret)?;
 
     let mut val = Validation::new(alg);
-    val.required_spec_claims.clear(); // exp не обязателен (вариант B: refresh по соединению)
+    val.required_spec_claims.clear(); // exp is not required (variant B: per-connection refresh)
     match &cfg.audience {
         Some(aud) => val.set_audience(&[aud]),
         None => val.validate_aud = false,
@@ -58,7 +58,7 @@ pub fn validate_jwt(token: &str, cfg: &Jwt) -> Result<Claims, AuthError> {
 }
 
 impl Claims {
-    /// Разрешено ли действие `action` на канале `channel` хотя бы одним грантом.
+    /// Whether `action` on `channel` is allowed by at least one grant.
     pub fn allows(&self, channel: &str, action: &str) -> bool {
         self.channels.iter().any(|g| {
             g.allow.iter().any(|a| a == action) && glob_match(&g.pattern, channel)
@@ -66,8 +66,8 @@ impl Claims {
     }
 }
 
-/// Glob-матчинг по сегментам, разделитель `:`.
-/// `*`  — ровно один сегмент; `**` — любое число сегментов (globstar).
+/// Segment-based glob matching, separator `:`.
+/// `*`  — exactly one segment; `**` — any number of segments (globstar).
 pub fn glob_match(pattern: &str, channel: &str) -> bool {
     let p: Vec<&str> = pattern.split(':').collect();
     let c: Vec<&str> = channel.split(':').collect();
@@ -78,7 +78,7 @@ fn seg_match(p: &[&str], c: &[&str]) -> bool {
     match (p.first(), c.first()) {
         (None, None) => true,
         (Some(&"**"), _) => {
-            // globstar: матчит 0..N сегментов
+            // globstar: matches 0..N segments
             if p.len() == 1 {
                 return true;
             }

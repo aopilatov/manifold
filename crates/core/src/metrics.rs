@@ -1,4 +1,4 @@
-//! Счётчики метрик (атомарные, без зависимости от Prometheus). Формат экспозиции — в server.
+//! Metric counters (atomic, with no Prometheus dependency). The exposition format lives in server.
 
 use std::sync::atomic::{AtomicU64, Ordering};
 

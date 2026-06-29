@@ -1,5 +1,5 @@
-//! Server API — gRPC адаптер (tonic). Тонкая обёртка над теми же `ApiService::api_*`.
-//! Auth — API-ключ в metadata `authorization: apikey <key>`.
+//! Server API — gRPC adapter (tonic). A thin wrapper over the same `ApiService::api_*`.
+//! Auth — API key in metadata `authorization: apikey <key>`.
 
 use std::collections::HashMap;
 use std::pin::Pin;
@@ -104,13 +104,13 @@ impl ServerApi for GrpcApi {
 
     async fn history_remove(&self, req: Request<HistoryRemoveApiRequest>) -> Result<Response<HistoryRemoveApiResponse>, Status> {
         check(req.metadata(), "history", &self.api)?;
-        // TODO(impl): очистка истории канала в брокере.
+        // TODO(impl): clear channel history in the broker.
         Ok(Response::new(HistoryRemoveApiResponse { error: None }))
     }
 
     async fn subscribe(&self, req: Request<SubscribeApiRequest>) -> Result<Response<SubscribeApiResponse>, Status> {
         check(req.metadata(), "subscribe", &self.api)?;
-        // TODO(impl): сервер-инициированная подписка (нужен control-канал subscribe).
+        // TODO(impl): server-initiated subscription (needs a subscribe control channel).
         Err(Status::unimplemented("server-side subscribe: TODO"))
     }
 
@@ -158,7 +158,7 @@ impl ServerApi for GrpcApi {
 
     async fn batch(&self, req: Request<BatchApiRequest>) -> Result<Response<BatchApiResponse>, Status> {
         check(req.metadata(), "publish", &self.api)?;
-        // TODO(impl): применить пачку команд.
+        // TODO(impl): apply a batch of commands.
         Err(Status::unimplemented("batch: TODO"))
     }
 
@@ -170,7 +170,7 @@ impl ServerApi for GrpcApi {
         req: Request<Streaming<PublishApiRequest>>,
     ) -> Result<Response<Self::PublishStreamStream>, Status> {
         check(req.metadata(), "publish", &self.api)?;
-        // TODO(impl): bidi-стрим публикаций (high-throughput).
+        // TODO(impl): bidi stream of publications (high-throughput).
         Err(Status::unimplemented("publish_stream: TODO"))
     }
 }

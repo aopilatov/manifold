@@ -1,13 +1,13 @@
-// Транспорты SDK за единым интерфейсом (раздел 4 архитектуры).
-// WS — двунаправленный сокет. SSE — расщеплённая сессия (EventSource вниз + POST вверх).
+// SDK transports behind a single interface (architecture section 4).
+// WS — bidirectional socket. SSE — split session (EventSource downstream + POST upstream).
 
 import { type ConnectResult, type Reply } from "@socket/proto-gen";
 import { decodeReply } from "./codec.js";
 
 export interface Transport {
   /**
-   * Открыть транспорт. Возвращает ConnectResult, если транспорт сам выполняет коннект (SSE),
-   * иначе null — клиент пошлёт Connect-команду сам (WS).
+   * Open the transport. Returns ConnectResult if the transport performs the connect itself (SSE),
+   * otherwise null — the client sends the Connect command itself (WS).
    */
   open(token: string): Promise<ConnectResult | null>;
   send(bytes: Uint8Array): void;
@@ -42,7 +42,7 @@ export class WsTransport implements Transport {
     });
     ws.onmessage = (ev) => this.replyCb(decodeReply(new Uint8Array((ev as MessageEvent).data as ArrayBuffer)));
     ws.onclose = () => this.closeCb();
-    return null; // WS: коннект выполняет клиент Connect-командой
+    return null; // WS: the client performs the connect via a Connect command
   }
 
   send(bytes: Uint8Array): void {
@@ -84,7 +84,7 @@ export class SseTransport implements Transport {
         if (!connected) {
           connected = true;
           if (reply.payload?.case !== "connect") {
-            reject(new Error("первое SSE-событие не ConnectResult"));
+            reject(new Error("first SSE event is not a ConnectResult"));
             return;
           }
           this.sessionId = reply.payload.value.client;
@@ -94,9 +94,9 @@ export class SseTransport implements Transport {
         this.replyCb(reply);
       };
       es.onerror = () => {
-        if (!connected) reject(new Error("SSE: не удалось открыть"));
+        if (!connected) reject(new Error("SSE: failed to open"));
         else {
-          es.close(); // не полагаемся на авто-reconnect EventSource — реконнектит клиент
+          es.close(); // don't rely on EventSource auto-reconnect — the client reconnects
           this.closeCb();
         }
       };
@@ -104,7 +104,7 @@ export class SseTransport implements Transport {
   }
 
   send(bytes: Uint8Array): void {
-    // upstream — бинарный POST (без base64)
+    // upstream — binary POST (no base64)
     void fetch(this.emitUrl, {
       method: "POST",
       headers: { "X-Session-Id": this.sessionId ?? "", "content-type": "application/octet-stream" },

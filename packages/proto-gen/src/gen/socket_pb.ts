@@ -13,13 +13,13 @@ export const file_socket: GenFile = /*@__PURE__*/
   fileDesc("Cgxzb2NrZXQucHJvdG8SCXNvY2tldC52MSLMAwoHQ29tbWFuZBIKCgJpZBgBIAEoDRIsCgdjb25uZWN0GAIgASgLMhkuc29ja2V0LnYxLkNvbm5lY3RSZXF1ZXN0SAASMAoJc3Vic2NyaWJlGAMgASgLMhsuc29ja2V0LnYxLlN1YnNjcmliZVJlcXVlc3RIABI0Cgt1bnN1YnNjcmliZRgEIAEoCzIdLnNvY2tldC52MS5VbnN1YnNjcmliZVJlcXVlc3RIABIsCgdwdWJsaXNoGAUgASgLMhkuc29ja2V0LnYxLlB1Ymxpc2hSZXF1ZXN0SAASLgoIcHJlc2VuY2UYBiABKAsyGi5zb2NrZXQudjEuUHJlc2VuY2VSZXF1ZXN0SAASLAoHaGlzdG9yeRgHIAEoCzIZLnNvY2tldC52MS5IaXN0b3J5UmVxdWVzdEgAEiYKBHBpbmcYCCABKAsyFi5zb2NrZXQudjEuUGluZ1JlcXVlc3RIABIsCgdyZWZyZXNoGAkgASgLMhkuc29ja2V0LnYxLlJlZnJlc2hSZXF1ZXN0SAASMwoLc3ViX3JlZnJlc2gYCiABKAsyHC5zb2NrZXQudjEuU3ViUmVmcmVzaFJlcXVlc3RIAEIICgZtZXRob2QiowMKBVJlcGx5EgoKAmlkGAEgASgNEh8KBWVycm9yGAIgASgLMhAuc29ja2V0LnYxLkVycm9yEisKB2Nvbm5lY3QYAyABKAsyGC5zb2NrZXQudjEuQ29ubmVjdFJlc3VsdEgAEi8KCXN1YnNjcmliZRgEIAEoCzIaLnNvY2tldC52MS5TdWJzY3JpYmVSZXN1bHRIABIzCgt1bnN1YnNjcmliZRgFIAEoCzIcLnNvY2tldC52MS5VbnN1YnNjcmliZVJlc3VsdEgAEisKB3B1Ymxpc2gYBiABKAsyGC5zb2NrZXQudjEuUHVibGlzaFJlc3VsdEgAEi0KCHByZXNlbmNlGAcgASgLMhkuc29ja2V0LnYxLlByZXNlbmNlUmVzdWx0SAASKwoHaGlzdG9yeRgIIAEoCzIYLnNvY2tldC52MS5IaXN0b3J5UmVzdWx0SAASJQoEcG9uZxgJIAEoCzIVLnNvY2tldC52MS5Qb25nUmVzdWx0SAASHwoEcHVzaBgKIAEoCzIPLnNvY2tldC52MS5QdXNoSABCCQoHcGF5bG9hZCI5CgVFcnJvchIMCgRjb2RlGAEgASgNEg8KB21lc3NhZ2UYAiABKAkSEQoJdGVtcG9yYXJ5GAMgASgIIq0CCg5Db25uZWN0UmVxdWVzdBINCgV0b2tlbhgBIAEoCRIxCgRzdWJzGAIgAygLMiMuc29ja2V0LnYxLkNvbm5lY3RSZXF1ZXN0LlN1YnNFbnRyeRI3CgdoZWFkZXJzGAMgAygLMiYuc29ja2V0LnYxLkNvbm5lY3RSZXF1ZXN0LkhlYWRlcnNFbnRyeRIMCgRuYW1lGAQgASgJEhgKEHByb3RvY29sX3ZlcnNpb24YBSABKA0aSAoJU3Vic0VudHJ5EgsKA2tleRgBIAEoCRIqCgV2YWx1ZRgCIAEoCzIbLnNvY2tldC52MS5TdWJzY3JpYmVSZXF1ZXN0OgI4ARouCgxIZWFkZXJzRW50cnkSCwoDa2V5GAEgASgJEg0KBXZhbHVlGAIgASgJOgI4ASJwChBTdWJzY3JpYmVSZXF1ZXN0Eg8KB2NoYW5uZWwYASABKAkSDQoFdG9rZW4YAiABKAkSDwoHcmVjb3ZlchgDIAEoCBIrCghwb3NpdGlvbhgEIAEoCzIZLnNvY2tldC52MS5TdHJlYW1Qb3NpdGlvbiIlChJVbnN1YnNjcmliZVJlcXVlc3QSDwoHY2hhbm5lbBgBIAEoCSJCCg5QdWJsaXNoUmVxdWVzdBIPCgdjaGFubmVsGAEgASgJEgwKBGRhdGEYAiABKAwSEQoJdHJhbnNpZW50GAMgASgIIiIKD1ByZXNlbmNlUmVxdWVzdBIPCgdjaGFubmVsGAEgASgJImsKDkhpc3RvcnlSZXF1ZXN0Eg8KB2NoYW5uZWwYASABKAkSDQoFbGltaXQYAiABKAUSKAoFc2luY2UYAyABKAsyGS5zb2NrZXQudjEuU3RyZWFtUG9zaXRpb24SDwoHcmV2ZXJzZRgEIAEoCCIfCg5SZWZyZXNoUmVxdWVzdBINCgV0b2tlbhgBIAEoCSIzChFTdWJSZWZyZXNoUmVxdWVzdBIPCgdjaGFubmVsGAEgASgJEg0KBXRva2VuGAIgASgJIg0KC1BpbmdSZXF1ZXN0IukBCg1Db25uZWN0UmVzdWx0Eg4KBmNsaWVudBgBIAEoCRIYChBwaW5nX2ludGVydmFsX21zGAIgASgNEhQKDGV4cGlyZXNfaW5fcxgDIAEoDRIMCgRkYXRhGAQgASgMEjAKBHN1YnMYBSADKAsyIi5zb2NrZXQudjEuQ29ubmVjdFJlc3VsdC5TdWJzRW50cnkSDwoHc2Vzc2lvbhgGIAEoCRpHCglTdWJzRW50cnkSCwoDa2V5GAEgASgJEikKBXZhbHVlGAIgASgLMhouc29ja2V0LnYxLlN1YnNjcmliZVJlc3VsdDoCOAEiqAEKD1N1YnNjcmliZVJlc3VsdBITCgtyZWNvdmVyYWJsZRgBIAEoCBIrCghwb3NpdGlvbhgCIAEoCzIZLnNvY2tldC52MS5TdHJlYW1Qb3NpdGlvbhIRCglyZWNvdmVyZWQYAyABKAgSLAoMcHVibGljYXRpb25zGAQgAygLMhYuc29ja2V0LnYxLlB1YmxpY2F0aW9uEhIKCnBvc2l0aW9uZWQYBSABKAgiEwoRVW5zdWJzY3JpYmVSZXN1bHQiPAoNUHVibGlzaFJlc3VsdBIrCghwb3NpdGlvbhgBIAEoCzIZLnNvY2tldC52MS5TdHJlYW1Qb3NpdGlvbiKTAQoOUHJlc2VuY2VSZXN1bHQSOQoIcHJlc2VuY2UYASADKAsyJy5zb2NrZXQudjEuUHJlc2VuY2VSZXN1bHQuUHJlc2VuY2VFbnRyeRpGCg1QcmVzZW5jZUVudHJ5EgsKA2tleRgBIAEoCRIkCgV2YWx1ZRgCIAEoCzIVLnNvY2tldC52MS5DbGllbnRJbmZvOgI4ASJqCg1IaXN0b3J5UmVzdWx0EiwKDHB1YmxpY2F0aW9ucxgBIAMoCzIWLnNvY2tldC52MS5QdWJsaWNhdGlvbhIrCghwb3NpdGlvbhgCIAEoCzIZLnNvY2tldC52MS5TdHJlYW1Qb3NpdGlvbiIMCgpQb25nUmVzdWx0IucBCgRQdXNoEg8KB2NoYW5uZWwYASABKAkSJQoDcHViGAIgASgLMhYuc29ja2V0LnYxLlB1YmxpY2F0aW9uSAASHwoEam9pbhgDIAEoCzIPLnNvY2tldC52MS5Kb2luSAASIQoFbGVhdmUYBCABKAsyEC5zb2NrZXQudjEuTGVhdmVIABItCgt1bnN1YnNjcmliZRgFIAEoCzIWLnNvY2tldC52MS5VbnN1YnNjcmliZUgAEisKCmRpc2Nvbm5lY3QYBiABKAsyFS5zb2NrZXQudjEuRGlzY29ubmVjdEgAQgcKBWV2ZW50Iq0BCgtQdWJsaWNhdGlvbhIMCgRkYXRhGAEgASgMEg4KBm9mZnNldBgCIAEoBBIjCgRpbmZvGAMgASgLMhUuc29ja2V0LnYxLkNsaWVudEluZm8SLgoEdGFncxgEIAMoCzIgLnNvY2tldC52MS5QdWJsaWNhdGlvbi5UYWdzRW50cnkaKwoJVGFnc0VudHJ5EgsKA2tleRgBIAEoCRINCgV2YWx1ZRgCIAEoCToCOAEiKwoESm9pbhIjCgRpbmZvGAEgASgLMhUuc29ja2V0LnYxLkNsaWVudEluZm8iLAoFTGVhdmUSIwoEaW5mbxgBIAEoCzIVLnNvY2tldC52MS5DbGllbnRJbmZvIisKC1Vuc3Vic2NyaWJlEgwKBGNvZGUYASABKA0SDgoGcmVhc29uGAIgASgJIj0KCkRpc2Nvbm5lY3QSDAoEY29kZRgBIAEoDRIOCgZyZWFzb24YAiABKAkSEQoJcmVjb25uZWN0GAMgASgIIlAKCkNsaWVudEluZm8SDAoEdXNlchgBIAEoCRIOCgZjbGllbnQYAiABKAkSEQoJY29ubl9pbmZvGAMgASgMEhEKCWNoYW5faW5mbxgEIAEoDCIvCg5TdHJlYW1Qb3NpdGlvbhIOCgZvZmZzZXQYASABKAQSDQoFZXBvY2gYAiABKAkirgEKEVB1Ymxpc2hBcGlSZXF1ZXN0Eg8KB2NoYW5uZWwYASABKAkSDAoEZGF0YRgCIAEoDBIXCg9pZGVtcG90ZW5jeV9rZXkYAyABKAkSNAoEdGFncxgEIAMoCzImLnNvY2tldC52MS5QdWJsaXNoQXBpUmVxdWVzdC5UYWdzRW50cnkaKwoJVGFnc0VudHJ5EgsKA2tleRgBIAEoCRINCgV2YWx1ZRgCIAEoCToCOAEiVAoSUHVibGlzaEFwaVJlc3BvbnNlEh8KBWVycm9yGAEgASgLMhAuc29ja2V0LnYxLkVycm9yEg4KBm9mZnNldBgCIAEoBBINCgVlcG9jaBgDIAEoCSJOChNCcm9hZGNhc3RBcGlSZXF1ZXN0EhAKCGNoYW5uZWxzGAEgAygJEgwKBGRhdGEYAiABKAwSFwoPaWRlbXBvdGVuY3lfa2V5GAMgASgJIssBChRCcm9hZGNhc3RBcGlSZXNwb25zZRIfCgVlcnJvchgBIAEoCzIQLnNvY2tldC52MS5FcnJvchJBCglyZXNwb25zZXMYAiADKAsyLi5zb2NrZXQudjEuQnJvYWRjYXN0QXBpUmVzcG9uc2UuUmVzcG9uc2VzRW50cnkaTwoOUmVzcG9uc2VzRW50cnkSCwoDa2V5GAEgASgJEiwKBXZhbHVlGAIgASgLMh0uc29ja2V0LnYxLlB1Ymxpc2hBcGlSZXNwb25zZToCOAEiJQoSUHJlc2VuY2VBcGlSZXF1ZXN0Eg8KB2NoYW5uZWwYASABKAkivgEKE1ByZXNlbmNlQXBpUmVzcG9uc2USHwoFZXJyb3IYASABKAsyEC5zb2NrZXQudjEuRXJyb3ISPgoIcHJlc2VuY2UYAiADKAsyLC5zb2NrZXQudjEuUHJlc2VuY2VBcGlSZXNwb25zZS5QcmVzZW5jZUVudHJ5GkYKDVByZXNlbmNlRW50cnkSCwoDa2V5GAEgASgJEiQKBXZhbHVlGAIgASgLMhUuc29ja2V0LnYxLkNsaWVudEluZm86AjgBIioKF1ByZXNlbmNlU3RhdHNBcGlSZXF1ZXN0Eg8KB2NoYW5uZWwYASABKAkiYwoYUHJlc2VuY2VTdGF0c0FwaVJlc3BvbnNlEh8KBWVycm9yGAEgASgLMhAuc29ja2V0LnYxLkVycm9yEhMKC251bV9jbGllbnRzGAIgASgNEhEKCW51bV91c2VycxgDIAEoDSJuChFIaXN0b3J5QXBpUmVxdWVzdBIPCgdjaGFubmVsGAEgASgJEg0KBWxpbWl0GAIgASgFEigKBXNpbmNlGAMgASgLMhkuc29ja2V0LnYxLlN0cmVhbVBvc2l0aW9uEg8KB3JldmVyc2UYBCABKAgikAEKEkhpc3RvcnlBcGlSZXNwb25zZRIfCgVlcnJvchgBIAEoCzIQLnNvY2tldC52MS5FcnJvchIsCgxwdWJsaWNhdGlvbnMYAiADKAsyFi5zb2NrZXQudjEuUHVibGljYXRpb24SKwoIcG9zaXRpb24YAyABKAsyGS5zb2NrZXQudjEuU3RyZWFtUG9zaXRpb24iKgoXSGlzdG9yeVJlbW92ZUFwaVJlcXVlc3QSDwoHY2hhbm5lbBgBIAEoCSI7ChhIaXN0b3J5UmVtb3ZlQXBpUmVzcG9uc2USHwoFZXJyb3IYASABKAsyEC5zb2NrZXQudjEuRXJyb3IiNAoTU3Vic2NyaWJlQXBpUmVxdWVzdBIMCgR1c2VyGAEgASgJEg8KB2NoYW5uZWwYAiABKAkiNwoUU3Vic2NyaWJlQXBpUmVzcG9uc2USHwoFZXJyb3IYASABKAsyEC5zb2NrZXQudjEuRXJyb3IiNgoVVW5zdWJzY3JpYmVBcGlSZXF1ZXN0EgwKBHVzZXIYASABKAkSDwoHY2hhbm5lbBgCIAEoCSI5ChZVbnN1YnNjcmliZUFwaVJlc3BvbnNlEh8KBWVycm9yGAEgASgLMhAuc29ja2V0LnYxLkVycm9yIlIKFERpc2Nvbm5lY3RBcGlSZXF1ZXN0EgwKBHVzZXIYASABKAkSDgoGY2xpZW50GAIgASgJEgwKBGNvZGUYAyABKA0SDgoGcmVhc29uGAQgASgJIjgKFURpc2Nvbm5lY3RBcGlSZXNwb25zZRIfCgVlcnJvchgBIAEoCzIQLnNvY2tldC52MS5FcnJvciIkChRVc2VyT25saW5lQXBpUmVxdWVzdBIMCgR1c2VyGAEgASgJImEKFVVzZXJPbmxpbmVBcGlSZXNwb25zZRIfCgVlcnJvchgBIAEoCzIQLnNvY2tldC52MS5FcnJvchIOCgZvbmxpbmUYAiABKAgSFwoPbnVtX2Nvbm5lY3Rpb25zGAMgASgNIiUKEkNoYW5uZWxzQXBpUmVxdWVzdBIPCgdwYXR0ZXJuGAEgASgJIkgKE0NoYW5uZWxzQXBpUmVzcG9uc2USHwoFZXJyb3IYASABKAsyEC5zb2NrZXQudjEuRXJyb3ISEAoIY2hhbm5lbHMYAiADKAkiEAoOSW5mb0FwaVJlcXVlc3QiVgoPSW5mb0FwaVJlc3BvbnNlEh8KBWVycm9yGAEgASgLMhAuc29ja2V0LnYxLkVycm9yEiIKBW5vZGVzGAIgAygLMhMuc29ja2V0LnYxLk5vZGVJbmZvIlUKCE5vZGVJbmZvEgwKBG5hbWUYASABKAkSEwoLbnVtX2NsaWVudHMYAiABKA0SFAoMbnVtX2NoYW5uZWxzGAMgASgNEhAKCHVwdGltZV9zGAQgASgEIjcKD0JhdGNoQXBpUmVxdWVzdBIkCghjb21tYW5kcxgBIAMoCzISLnNvY2tldC52MS5Db21tYW5kIjUKEEJhdGNoQXBpUmVzcG9uc2USIQoHcmVwbGllcxgBIAMoCzIQLnNvY2tldC52MS5SZXBseTLKCAoJU2VydmVyQXBpEkYKB1B1Ymxpc2gSHC5zb2NrZXQudjEuUHVibGlzaEFwaVJlcXVlc3QaHS5zb2NrZXQudjEuUHVibGlzaEFwaVJlc3BvbnNlEkwKCUJyb2FkY2FzdBIeLnNvY2tldC52MS5Ccm9hZGNhc3RBcGlSZXF1ZXN0Gh8uc29ja2V0LnYxLkJyb2FkY2FzdEFwaVJlc3BvbnNlEkkKCFByZXNlbmNlEh0uc29ja2V0LnYxLlByZXNlbmNlQXBpUmVxdWVzdBoeLnNvY2tldC52MS5QcmVzZW5jZUFwaVJlc3BvbnNlElgKDVByZXNlbmNlU3RhdHMSIi5zb2NrZXQudjEuUHJlc2VuY2VTdGF0c0FwaVJlcXVlc3QaIy5zb2NrZXQudjEuUHJlc2VuY2VTdGF0c0FwaVJlc3BvbnNlEkYKB0hpc3RvcnkSHC5zb2NrZXQudjEuSGlzdG9yeUFwaVJlcXVlc3QaHS5zb2NrZXQudjEuSGlzdG9yeUFwaVJlc3BvbnNlElgKDUhpc3RvcnlSZW1vdmUSIi5zb2NrZXQudjEuSGlzdG9yeVJlbW92ZUFwaVJlcXVlc3QaIy5zb2NrZXQudjEuSGlzdG9yeVJlbW92ZUFwaVJlc3BvbnNlEkwKCVN1YnNjcmliZRIeLnNvY2tldC52MS5TdWJzY3JpYmVBcGlSZXF1ZXN0Gh8uc29ja2V0LnYxLlN1YnNjcmliZUFwaVJlc3BvbnNlElIKC1Vuc3Vic2NyaWJlEiAuc29ja2V0LnYxLlVuc3Vic2NyaWJlQXBpUmVxdWVzdBohLnNvY2tldC52MS5VbnN1YnNjcmliZUFwaVJlc3BvbnNlEk8KCkRpc2Nvbm5lY3QSHy5zb2NrZXQudjEuRGlzY29ubmVjdEFwaVJlcXVlc3QaIC5zb2NrZXQudjEuRGlzY29ubmVjdEFwaVJlc3BvbnNlEk8KClVzZXJPbmxpbmUSHy5zb2NrZXQudjEuVXNlck9ubGluZUFwaVJlcXVlc3QaIC5zb2NrZXQudjEuVXNlck9ubGluZUFwaVJlc3BvbnNlEkkKCENoYW5uZWxzEh0uc29ja2V0LnYxLkNoYW5uZWxzQXBpUmVxdWVzdBoeLnNvY2tldC52MS5DaGFubmVsc0FwaVJlc3BvbnNlEj0KBEluZm8SGS5zb2NrZXQudjEuSW5mb0FwaVJlcXVlc3QaGi5zb2NrZXQudjEuSW5mb0FwaVJlc3BvbnNlEkAKBUJhdGNoEhouc29ja2V0LnYxLkJhdGNoQXBpUmVxdWVzdBobLnNvY2tldC52MS5CYXRjaEFwaVJlc3BvbnNlElAKDVB1Ymxpc2hTdHJlYW0SHC5zb2NrZXQudjEuUHVibGlzaEFwaVJlcXVlc3QaHS5zb2NrZXQudjEuUHVibGlzaEFwaVJlc3BvbnNlKAEwAWIGcHJvdG8z");
 
 /**
- * Клиент → сервер
+ * Client → server
  *
  * @generated from message socket.v1.Command
  */
 export type Command = Message<"socket.v1.Command"> & {
   /**
-   * корреляционный id; уникален в рамках соединения
+   * correlation id; unique within a connection
    *
    * @generated from field: uint32 id = 1;
    */
@@ -72,7 +72,7 @@ export type Command = Message<"socket.v1.Command"> & {
     case: "ping";
   } | {
     /**
-     * продление СОЕДИНЕНИЯ новым JWT
+     * renew the CONNECTION with a new JWT
      *
      * @generated from field: socket.v1.RefreshRequest refresh = 9;
      */
@@ -80,7 +80,7 @@ export type Command = Message<"socket.v1.Command"> & {
     case: "refresh";
   } | {
     /**
-     * продление ПОДПИСКИ новым sub-токеном
+     * renew a SUBSCRIPTION with a new sub-token
      *
      * @generated from field: socket.v1.SubRefreshRequest sub_refresh = 10;
      */
@@ -97,13 +97,13 @@ export const CommandSchema: GenMessage<Command> = /*@__PURE__*/
   messageDesc(file_socket, 0);
 
 /**
- * Сервер → клиент
+ * Server → client
  *
  * @generated from message socket.v1.Reply
  */
 export type Reply = Message<"socket.v1.Reply"> & {
   /**
-   * 0 ⇒ асинхронный Push
+   * 0 ⇒ asynchronous Push
    *
    * @generated from field: uint32 id = 1;
    */
@@ -180,7 +180,7 @@ export const ReplySchema: GenMessage<Reply> = /*@__PURE__*/
  */
 export type Error = Message<"socket.v1.Error"> & {
   /**
-   * стабильный машинный код
+   * stable machine-readable code
    *
    * @generated from field: uint32 code = 1;
    */
@@ -192,7 +192,7 @@ export type Error = Message<"socket.v1.Error"> & {
   message: string;
 
   /**
-   * true ⇒ имеет смысл повторить (backoff)
+   * true ⇒ worth retrying (backoff)
    *
    * @generated from field: bool temporary = 3;
    */
@@ -207,7 +207,7 @@ export const ErrorSchema: GenMessage<Error> = /*@__PURE__*/
   messageDesc(file_socket, 2);
 
 /**
- * --- Команды ---
+ * --- Commands ---
  *
  * @generated from message socket.v1.ConnectRequest
  */
@@ -220,7 +220,7 @@ export type ConnectRequest = Message<"socket.v1.ConnectRequest"> & {
   token: string;
 
   /**
-   * батч-восстановление подписок за 1 RTT (реконнект)
+   * batch subscription restore in 1 RTT (reconnect)
    *
    * @generated from field: map<string, socket.v1.SubscribeRequest> subs = 2;
    */
@@ -232,7 +232,7 @@ export type ConnectRequest = Message<"socket.v1.ConnectRequest"> & {
   headers: { [key: string]: string };
 
   /**
-   * имя SDK
+   * SDK name
    *
    * @generated from field: string name = 4;
    */
@@ -261,7 +261,7 @@ export type SubscribeRequest = Message<"socket.v1.SubscribeRequest"> & {
   channel: string;
 
   /**
-   * опц. sub-токен для приватного канала
+   * opt. sub-token for a private channel
    *
    * @generated from field: string token = 2;
    */
@@ -317,7 +317,7 @@ export type PublishRequest = Message<"socket.v1.PublishRequest"> & {
   data: Uint8Array;
 
   /**
-   * fire-and-forget: минует историю/offset (typing и т.п.)
+   * fire-and-forget: bypasses history/offset (typing, etc.)
    *
    * @generated from field: bool transient = 3;
    */
@@ -433,7 +433,7 @@ export const PingRequestSchema: GenMessage<PingRequest> = /*@__PURE__*/
   messageDesc(file_socket, 11);
 
 /**
- * --- Результаты ---
+ * --- Results ---
  *
  * @generated from message socket.v1.ConnectResult
  */
@@ -449,7 +449,7 @@ export type ConnectResult = Message<"socket.v1.ConnectResult"> & {
   pingIntervalMs: number;
 
   /**
-   * 0 = бессрочно
+   * 0 = never expires
    *
    * @generated from field: uint32 expires_in_s = 3;
    */
@@ -461,14 +461,14 @@ export type ConnectResult = Message<"socket.v1.ConnectResult"> & {
   data: Uint8Array;
 
   /**
-   * результат каждой восстановленной подписки
+   * result of each restored subscription
    *
    * @generated from field: map<string, socket.v1.SubscribeResult> subs = 5;
    */
   subs: { [key: string]: SubscribeResult };
 
   /**
-   * опц. id для server-side resume
+   * opt. id for server-side resume
    *
    * @generated from field: string session = 6;
    */
@@ -502,7 +502,7 @@ export type SubscribeResult = Message<"socket.v1.SubscribeResult"> & {
   recovered: boolean;
 
   /**
-   * досылка пропущенного
+   * delivery of missed messages
    *
    * @generated from field: repeated socket.v1.Publication publications = 4;
    */
@@ -604,7 +604,7 @@ export const PongResultSchema: GenMessage<PongResult> = /*@__PURE__*/
   messageDesc(file_socket, 18);
 
 /**
- * --- Асинхронные пуши (Reply.id = 0) ---
+ * --- Asynchronous pushes (Reply.id = 0) ---
  *
  * @generated from message socket.v1.Push
  */
@@ -637,7 +637,7 @@ export type Push = Message<"socket.v1.Push"> & {
     case: "leave";
   } | {
     /**
-     * сервер принудительно отписал
+     * server forcibly unsubscribed
      *
      * @generated from field: socket.v1.Unsubscribe unsubscribe = 5;
      */
@@ -645,7 +645,7 @@ export type Push = Message<"socket.v1.Push"> & {
     case: "unsubscribe";
   } | {
     /**
-     * сервер закрывает соединение
+     * server is closing the connection
      *
      * @generated from field: socket.v1.Disconnect disconnect = 6;
      */
@@ -666,14 +666,14 @@ export const PushSchema: GenMessage<Push> = /*@__PURE__*/
  */
 export type Publication = Message<"socket.v1.Publication"> & {
   /**
-   * прикладной payload (движок не парсит)
+   * application payload (the engine does not parse it)
    *
    * @generated from field: bytes data = 1;
    */
   data: Uint8Array;
 
   /**
-   * позиция в потоке канала (recovery)
+   * position in the channel stream (recovery)
    *
    * @generated from field: uint64 offset = 2;
    */
@@ -813,20 +813,20 @@ export const ClientInfoSchema: GenMessage<ClientInfo> = /*@__PURE__*/
   messageDesc(file_socket, 25);
 
 /**
- * Фундамент recovery
+ * Recovery foundation
  *
  * @generated from message socket.v1.StreamPosition
  */
 export type StreamPosition = Message<"socket.v1.StreamPosition"> & {
   /**
-   * монотонный номер последнего сообщения
+   * monotonic number of the last message
    *
    * @generated from field: uint64 offset = 1;
    */
   offset: bigint;
 
   /**
-   * метка жизни потока; смена ⇒ история сброшена
+   * stream lifetime marker; a change ⇒ history was reset
    *
    * @generated from field: string epoch = 2;
    */

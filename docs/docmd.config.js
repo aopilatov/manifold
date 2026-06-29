@@ -1,8 +1,8 @@
-// Конфиг docmd (zero-config SSG). См. docs/architecture.md, раздел 10.
+// docmd config (zero-config SSG). See docs/architecture.md, section 10.
 export default {
   siteTitle: "Socket",
   title: "Socket",
-  description: "Настраиваемый realtime-движок (WebSocket pub/sub)",
+  description: "Configurable realtime engine (WebSocket pub/sub)",
   srcDir: ".",
   outputDir: "../dist-docs",
   theme: {
@@ -10,11 +10,11 @@ export default {
     defaultMode: "dark",
   },
   navigation: [
-    { title: "Обзор", path: "/" },
-    { title: "Архитектура", path: "/architecture" },
-    { title: "Прогресс", path: "/progress" },
-    { title: "Протокол", path: "/protocol" },
+    { title: "Overview", path: "/" },
+    { title: "Architecture", path: "/architecture" },
+    { title: "Progress", path: "/progress" },
+    { title: "Protocol", path: "/protocol" },
     { title: "Server API", path: "/server-api" },
-    { title: "Справочник конфига", path: "/config-reference" },
+    { title: "Config reference", path: "/config-reference" },
   ],
 };

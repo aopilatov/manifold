@@ -1,5 +1,5 @@
-//! Hub: in-memory маршрутизация на ноде. Только соединения и индекс «канал → локальные
-//! подписчики». Состояние каналов (offset/epoch/история/presence) — в [`socket_broker::Broker`].
+//! Hub: in-memory routing on a node. Only connections and a "channel → local subscribers" index.
+//! Channel state (offset/epoch/history/presence) lives in [`socket_broker::Broker`].
 
 use crate::auth::Claims;
 use dashmap::DashMap;
@@ -11,7 +11,7 @@ use tokio::sync::mpsc;
 pub type ClientId = String;
 pub type Channel = String;
 
-/// Дескриптор живого соединения на этой ноде.
+/// Descriptor of a live connection on this node.
 pub struct ConnHandle {
     pub user_id: String,
     pub claims: Option<Claims>,
@@ -30,7 +30,7 @@ impl Hub {
         Arc::new(Self::default())
     }
 
-    /// true ⇒ первый локальный подписчик (в мультиноде — повод для ленивого SUBSCRIBE, TODO).
+    /// true ⇒ first local subscriber (in multi-node, a reason for a lazy SUBSCRIBE, TODO).
     pub fn add_sub(&self, channel: &str, client: &str) -> bool {
         let mut set = self.channels.entry(channel.to_string()).or_default();
         let first = set.is_empty();
@@ -38,7 +38,7 @@ impl Hub {
         first
     }
 
-    /// true ⇒ ушёл последний локальный подписчик.
+    /// true ⇒ the last local subscriber left.
     pub fn remove_sub(&self, channel: &str, client: &str) -> bool {
         if let Some(mut set) = self.channels.get_mut(channel) {
             set.remove(client);
@@ -51,7 +51,7 @@ impl Hub {
         false
     }
 
-    /// Локальный fan-out: разослать Reply всем локальным подписчикам канала.
+    /// Local fan-out: send Reply to all local subscribers of the channel.
     pub fn fan_out(&self, channel: &str, reply: Reply) {
         let targets: Vec<ClientId> = match self.channels.get(channel) {
             Some(set) => set.iter().cloned().collect(),
@@ -59,7 +59,7 @@ impl Hub {
         };
         for cid in targets {
             if let Some(conn) = self.connections.get(&cid) {
-                let _ = conn.tx.try_send(reply.clone()); // переполнение → дисконнект (TODO)
+                let _ = conn.tx.try_send(reply.clone()); // overflow → disconnect (TODO)
             }
         }
     }
@@ -72,17 +72,17 @@ impl Hub {
         self.connections.len()
     }
 
-    /// Сколько локальных соединений у юзера.
+    /// How many local connections the user has.
     pub fn user_connection_count(&self, user: &str) -> usize {
         self.connections.iter().filter(|e| e.user_id == user).count()
     }
 
-    /// Список активных каналов (локально), опц. фильтр по точному совпадению префикса.
+    /// List of active channels (locally), optional filter by exact prefix match.
     pub fn channels_list(&self) -> Vec<String> {
         self.channels.iter().map(|e| e.key().clone()).collect()
     }
 
-    /// Принудительно отключить соединения, совпадающие по user и/или client (control-команда).
+    /// Forcibly disconnect connections matching user and/or client (control command).
     pub fn disconnect_matching(&self, user: &str, client: &str, code: u32, reason: &str) {
         let ids: Vec<ClientId> = self
             .connections
@@ -100,7 +100,7 @@ impl Hub {
         }
     }
 
-    /// Принудительно отписать соединения юзера от канала (control-команда).
+    /// Forcibly unsubscribe a user's connections from a channel (control command).
     pub fn unsubscribe_matching(&self, user: &str, channel: &str) {
         let ids: Vec<ClientId> = self
             .connections

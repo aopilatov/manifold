@@ -1,24 +1,24 @@
 ---
 title: Socket
-description: Настраиваемый realtime-движок (WebSocket pub/sub)
+description: Configurable realtime engine (WebSocket pub/sub)
 ---
 
 # Socket
 
-Самостоятельный сервер-движок реалтайма (pub/sub поверх WebSocket): «как Centrifugo, но
-настраиваемее». Запускается независимо. Монорепо: Rust-бэкенд + React-фронтенд + Markdown-доки.
+A standalone realtime engine server (pub/sub over WebSocket): "like Centrifugo, but more
+configurable". Runs independently. Monorepo: Rust backend + React frontend + Markdown docs.
 
-- **[Архитектура](/architecture)** — полный дизайн-документ.
+- **[Architecture](/architecture)** — the full design document.
 
-## Быстрый старт (dev)
+## Quick start (dev)
 
 ```bash
-just dev        # поднять Redis + движок + admin + docs
+just dev        # bring up Redis + engine + admin + docs
 ```
 
-## Части
+## Parts
 
-- `crates/` — Rust-движок (server, core, broker, protocol)
-- `packages/client-ts` — клиентский SDK
+- `crates/` — Rust engine (server, core, broker, protocol)
+- `packages/client-ts` — client SDK
 - `web/` — admin UI (React + Mantine)
-- `docs/` — эта документация (docmd)
+- `docs/` — this documentation (docmd)

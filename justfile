@@ -1,21 +1,21 @@
-# Оркестрация монорепо. `just` — https://github.com/casey/just
+# Monorepo orchestration. `just` — https://github.com/casey/just
 
-# Список команд
+# List commands
 default:
     @just --list
 
-# Поднять инфраструктуру (Redis)
+# Bring up infrastructure (Redis)
 infra-up:
     docker compose up -d redis
 
 infra-down:
     docker compose down
 
-# Сгенерировать protobuf-типы для TS (Rust генерит build.rs автоматически)
+# Generate protobuf types for TS (Rust generates via build.rs automatically)
 proto-gen:
     pnpm proto:gen
 
-# Запустить движок (Rust)
+# Run the engine (Rust)
 server:
     SOCKET_CONFIG=config.toml cargo run -p socket-server
 
@@ -23,29 +23,29 @@ server:
 web:
     pnpm web:dev
 
-# Сгенерировать справочные доки из proto/config
+# Generate reference docs from proto/config
 docs-gen:
     pnpm docs:gen
 
-# Документация (автоген + docmd dev)
+# Documentation (autogen + docmd dev)
 docs:
     pnpm docs:dev
 
-# Полный dev-цикл: инфра + движок + admin + docs
+# Full dev cycle: infra + engine + admin + docs
 dev: infra-up
-    @echo "Redis поднят. Запусти в отдельных терминалах: just server | just web | just docs"
+    @echo "Redis is up. Run in separate terminals: just server | just web | just docs"
 
-# Сборка всего
+# Build everything
 build:
     cargo build --release
     pnpm web:build
     pnpm docs:build
 
-# Тесты Rust
+# Rust tests
 test:
     cargo test
 
-# Проверка (clippy + fmt)
+# Checks (clippy + fmt)
 check:
     cargo clippy --all-targets -- -D warnings
     cargo fmt --check

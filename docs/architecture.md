@@ -1,116 +1,116 @@
 ---
-title: Архитектура
-description: Дизайн-документ движка реалтайма (WebSocket pub/sub)
+title: Architecture
+description: Design document for a realtime engine (WebSocket pub/sub)
 ---
 
-# Socket — дизайн-документ
+# Socket — design document
 
-Самостоятельный сервер-движок реалтайма (pub/sub поверх WebSocket): «как Centrifugo,
-но настраиваемее». Деплоится и запускается независимо, не встраивается как библиотека.
-Монорепо: Rust-бэкенд + React-фронтенд (admin) + Markdown-документация.
+A standalone realtime engine server (pub/sub over WebSocket): "like Centrifugo,
+but more configurable". Deployed and run independently, not embedded as a library.
+Monorepo: Rust backend + React frontend (admin) + Markdown documentation.
 
 ---
 
-## 1. Цели и не-цели
+## 1. Goals and non-goals
 
-**Цели:**
+**Goals:**
 
-- Публичные каналы — подписка **без токена**, с динамической под/отпиской на подканалы.
-- Приватные каналы — то же самое, но с авторизацией подписки.
-- Гибкая модель прав: список разрешённых **паттернов каналов** прямо в JWT.
-- Мультинода с первого дня (горизонтальное масштабирование).
-- Presence, история сообщений и довосстановление (recovery).
-- Server API для публикации из прикладного бэкенда (HTTP **и** gRPC).
+- Public channels — subscription **without a token**, with dynamic sub/unsub to subchannels.
+- Private channels — the same, but with subscription authorization.
+- Flexible permission model: a list of allowed **channel patterns** right in the JWT.
+- Multi-node from day one (horizontal scaling).
+- Presence, message history, and recovery.
+- Server API for publishing from the application backend (HTTP **and** gRPC).
 - Admin/monitoring UI.
 
-**Не-цели:**
+**Non-goals:**
 
-- Движок **не** хранит пользователей и **не** выдаёт токены — это делает внешний (проектный) бэкенд.
-- Движок **не** парсит прикладной payload сообщений (`data` всегда `bytes`).
+- The engine does **not** store users and does **not** issue tokens — that is done by the external (application) backend.
+- The engine does **not** parse the application message payload (`data` is always `bytes`).
 
 ---
 
-## 2. Технологический стек
+## 2. Technology stack
 
-| Часть | Стек |
+| Part | Stack |
 |---|---|
-| **Backend** | Rust: `axum` + `tokio`; свой протокол на **Protobuf** (`prost`); gRPC через `tonic` |
-| **Брокер** | **Redis** (pub/sub + история + presence), скрыт за trait `Broker` (позже — NATS) |
-| **Client SDK** | TS-пакет (`client-ts`): транспорт, реконнект, реестр подписок, recovery, protobuf |
-| **Frontend (admin)** | Vite + React + TS + **Mantine**; live-данные через `protobuf-es`; зависит от `client-ts` |
+| **Backend** | Rust: `axum` + `tokio`; custom protocol over **Protobuf** (`prost`); gRPC via `tonic` |
+| **Broker** | **Redis** (pub/sub + history + presence), hidden behind a `Broker` trait (NATS later) |
+| **Client SDK** | TS package (`client-ts`): transport, reconnect, subscription registry, recovery, protobuf |
+| **Frontend (admin)** | Vite + React + TS + **Mantine**; live data via `protobuf-es`; depends on `client-ts` |
 | **Docs** | **docmd** (zero-config SSG, framework-free, Markdown-in → static HTML) |
-| **Монорепо** | Cargo workspace + Vite + docmd; оркестрация через `just` |
+| **Monorepo** | Cargo workspace + Vite + docmd; orchestration via `just` |
 
-Единого «фуллстек Rust+React» фреймворка не существует — стандарт здесь монорепо из
-независимых частей, связанных общим контрактом `.proto`.
+A single "full-stack Rust+React" framework does not exist — the standard here is a monorepo of
+independent parts tied together by a shared `.proto` contract.
 
 ---
 
-## 3. Структура репозитория
+## 3. Repository structure
 
 ```
 socket/
 ├── Cargo.toml               # cargo workspace
-├── proto/                   # .proto — ЕДИНЫЙ контракт (источник истины)
+├── proto/                   # .proto — the SINGLE contract (source of truth)
 ├── crates/
-│   ├── server/              # axum: WS-сервер, HTTP API, gRPC API, раздача admin-статики
-│   │   ├── ws/              # клиентский WebSocket-протокол
-│   │   ├── http_api/        # Server API: HTTP/JSON адаптер
-│   │   └── grpc_api/        # Server API: gRPC (tonic) адаптер
-│   ├── core/                # ApiService, hub, реестр каналов, glob-матчинг, auth
-│   ├── protocol/            # prost-сгенерированные типы из proto/
-│   └── broker/              # trait Broker + Redis-реализация
+│   ├── server/              # axum: WS server, HTTP API, gRPC API, serving admin statics
+│   │   ├── ws/              # client WebSocket protocol
+│   │   ├── http_api/        # Server API: HTTP/JSON adapter
+│   │   └── grpc_api/        # Server API: gRPC (tonic) adapter
+│   ├── core/                # ApiService, hub, channel registry, glob matching, auth
+│   ├── protocol/            # prost-generated types from proto/
+│   └── broker/              # trait Broker + Redis implementation
 ├── packages/
-│   ├── client-ts/           # КЛИЕНТСКИЙ SDK (TS): реконнект, реестр подписок, recovery, protobuf
-│   └── proto-gen/           # сгенерированные protobuf-es типы (общие для client-ts и web)
-├── web/                     # React + Mantine admin UI (зависит от client-ts)
-├── docs/                    # docmd: Markdown-документация (+ автоген из proto/config)
-├── config.toml              # конфиг сервера
+│   ├── client-ts/           # CLIENT SDK (TS): reconnect, subscription registry, recovery, protobuf
+│   └── proto-gen/           # generated protobuf-es types (shared by client-ts and web)
+├── web/                     # React + Mantine admin UI (depends on client-ts)
+├── docs/                    # docmd: Markdown documentation (+ autogen from proto/config)
+├── config.toml              # server config
 ├── justfile                 # dev/build/codegen
 └── docker-compose.yml       # server + redis
 ```
 
-**Кодоген типов:** `proto/*.proto` → Rust (`prost`) и TS (`protobuf-es`). Фронт и бэк
-физически не разъезжаются по схеме. Часть `.md`-доков тоже генерится из `.proto` и
-config-структур.
+**Type codegen:** `proto/*.proto` → Rust (`prost`) and TS (`protobuf-es`). The frontend and backend
+physically cannot drift apart on the schema. Some `.md` docs are also generated from `.proto` and
+config structures.
 
 ---
 
-## 4. Протокол (клиент ⇆ сервер)
+## 4. Protocol (client ⇆ server)
 
-Бинарный, на Protobuf. Летят `Command` (от клиента) и `Reply` (от сервера).
-`Reply` — это либо ответ на команду (тот же `id`), либо асинхронный `Push` (`id = 0`).
+Binary, over Protobuf. `Command` (from the client) and `Reply` (from the server) travel the wire.
+A `Reply` is either a response to a command (same `id`) or an asynchronous `Push` (`id = 0`).
 
-### Транспорты (за trait `Transport`)
+### Transports (behind a `Transport` trait)
 
-Ядро (сессия/hub/recovery/auth) работает с `Stream<Command>` + `Sink<Reply>` и транспорт
-не знает. В MVP — два:
+The core (session/hub/recovery/auth) works with `Stream<Command>` + `Sink<Reply>` and is unaware of
+the transport. In the MVP — two:
 
 ```rust
 trait Transport {
-    fn commands(&mut self) -> impl Stream<Item = Command>;  // вверх (client→server)
-    fn replies(&mut self)  -> impl Sink<Reply>;             // вниз (server→client)
+    fn commands(&mut self) -> impl Stream<Item = Command>;  // upstream (client→server)
+    fn replies(&mut self)  -> impl Sink<Reply>;             // downstream (server→client)
 }
 ```
 
-- **WebSocket** — один двунаправленный сокет, сырые бинарные кадры.
-- **SSE** (фолбэк для сетей, режущих WS) — расщеплённая сессия:
+- **WebSocket** — a single bidirectional socket, raw binary frames.
+- **SSE** (fallback for networks that cut WS) — a split session:
   `GET /connection/sse` (EventSource, downstream) + `POST /connection/sse/emit`
-  (Command вверх, коррелируется `X-Session-Id`). SSE текстовый → кадры как
-  **base64(protobuf)**. Установка: EventSource с токеном в query/cookie → сервер создаёт
-  сессию в том же hub → первым событием шлёт `session_id` + `ConnectResult`.
-  **Recovery-синергия:** нативный `Last-Event-ID` при авто-реконнекте EventSource ложится на
-  `StreamPosition` — сервер досылает сессию с нужной позиции.
-- SSE/HTTP-streaming/WebTransport-расширения — аддитивны, отдельным `impl Transport`.
+  (Command upstream, correlated by `X-Session-Id`). SSE is text → frames as
+  **base64(protobuf)**. Setup: EventSource with a token in the query/cookie → the server creates
+  a session in the same hub → sends `session_id` + `ConnectResult` as the first event.
+  **Recovery synergy:** the native `Last-Event-ID` on EventSource auto-reconnect maps onto
+  `StreamPosition` — the server resumes the session from the right position.
+- SSE/HTTP-streaming/WebTransport extensions — additive, as a separate `impl Transport`.
 
-### 4.1 Конверты
+### 4.1 Envelopes
 
 ```protobuf
 syntax = "proto3";
 package socket.v1;
 
 message Command {
-  uint32 id = 1;              // корреляционный id, уникален в рамках соединения
+  uint32 id = 1;              // correlation id, unique within a connection
   oneof method {
     ConnectRequest     connect     = 2;
     SubscribeRequest   subscribe   = 3;
@@ -119,13 +119,13 @@ message Command {
     PresenceRequest    presence    = 6;
     HistoryRequest     history     = 7;
     PingRequest        ping        = 8;
-    RefreshRequest     refresh     = 9;   // продление СОЕДИНЕНИЯ новым JWT
-    SubRefreshRequest  sub_refresh = 10;  // продление ПОДПИСКИ новым sub-токеном
+    RefreshRequest     refresh     = 9;   // renew the CONNECTION with a new JWT
+    SubRefreshRequest  sub_refresh = 10;  // renew a SUBSCRIPTION with a new sub-token
   }
 }
 
 message Reply {
-  uint32 id = 1;              // 0 ⇒ асинхронный Push
+  uint32 id = 1;              // 0 ⇒ asynchronous Push
   Error  error = 2;
   oneof payload {
     ConnectResult     connect      = 3;
@@ -140,32 +140,32 @@ message Reply {
 }
 
 message Error {
-  uint32 code = 1;            // стабильный машинный код
+  uint32 code = 1;            // stable machine-readable code
   string message = 2;
-  bool   temporary = 3;       // true ⇒ клиенту имеет смысл повторить (backoff)
+  bool   temporary = 3;       // true ⇒ it makes sense for the client to retry (backoff)
 }
 ```
 
-### 4.2 Команды клиент→сервер
+### 4.2 Client→server commands
 
 ```protobuf
 message ConnectRequest {
   string token = 1;                  // connection JWT (claim channels[])
-  map<string, SubscribeRequest> subs = 2;  // батч-восстановление подписок за 1 RTT (реконнект)
+  map<string, SubscribeRequest> subs = 2;  // batch restore of subscriptions in 1 RTT (reconnect)
   map<string, string> headers = 3;
-  string name = 4;                   // имя SDK для отладки
+  string name = 4;                   // SDK name for debugging
 }
 message SubscribeRequest {
   string channel = 1;                // "chat:room:42"
-  string token = 2;                  // опц. отдельный sub-токен
+  string token = 2;                  // opt. separate sub-token
   bool   recover = 3;
-  StreamPosition position = 4;       // с какого offset/epoch восстанавливать
+  StreamPosition position = 4;       // which offset/epoch to recover from
 }
 message UnsubscribeRequest { string channel = 1; }
 message PublishRequest {
   string channel = 1;
   bytes  data = 2;
-  bool   transient = 3;   // fire-and-forget: минует историю/offset (typing, эфемерные сигналы)
+  bool   transient = 3;   // fire-and-forget: bypasses history/offset (typing, ephemeral signals)
 }
 message PresenceRequest { string channel = 1; }
 message HistoryRequest {
@@ -176,22 +176,22 @@ message SubRefreshRequest { string channel = 1; string token = 2; }
 message PingRequest {}
 ```
 
-### 4.3 Результаты и асинхронные пуши
+### 4.3 Results and asynchronous pushes
 
 ```protobuf
 message ConnectResult {
-  string client = 1;                 // id соединения
+  string client = 1;                 // connection id
   uint32 ping_interval_ms = 2;
-  uint32 expires_in_s = 3;           // 0 = бессрочно
+  uint32 expires_in_s = 3;           // 0 = never expires
   bytes  data = 4;
-  map<string, SubscribeResult> subs = 5;   // результат каждой восстановленной подписки
-  string session = 6;                // опц. id для server-side resume
+  map<string, SubscribeResult> subs = 5;   // result of each restored subscription
+  string session = 6;                // opt. id for server-side resume
 }
 message SubscribeResult {
   bool recoverable = 1;
   StreamPosition position = 2;
   bool recovered = 3;
-  repeated Publication publications = 4;  // досылка пропущенного
+  repeated Publication publications = 4;  // delivery of missed messages
   bool positioned = 5;
 }
 message UnsubscribeResult {}
@@ -206,14 +206,14 @@ message Push {
     Publication pub         = 2;
     Join        join        = 3;
     Leave       leave       = 4;
-    Unsubscribe unsubscribe = 5;     // сервер принудительно отписал
-    Disconnect  disconnect  = 6;     // сервер закрывает соединение
+    Unsubscribe unsubscribe = 5;     // the server forcibly unsubscribed
+    Disconnect  disconnect  = 6;     // the server is closing the connection
   }
 }
 
 message Publication {
-  bytes  data = 1;                   // прикладной payload (движок не парсит)
-  uint64 offset = 2;                 // позиция в потоке канала (recovery)
+  bytes  data = 1;                   // application payload (the engine does not parse it)
+  uint64 offset = 2;                 // position in the channel stream (recovery)
   ClientInfo info = 3;
   map<string, string> tags = 4;
 }
@@ -224,37 +224,37 @@ message Disconnect  { uint32 code = 1; string reason = 2; bool reconnect = 3; }
 
 message ClientInfo { string user = 1; string client = 2; bytes conn_info = 3; bytes chan_info = 4; }
 
-// Фундамент recovery
+// Recovery foundation
 message StreamPosition {
-  uint64 offset = 1;                 // монотонный номер последнего сообщения
-  string epoch = 2;                  // метка жизни потока; смена ⇒ история сброшена
+  uint64 offset = 1;                 // monotonic number of the last message
+  string epoch = 2;                  // stream lifetime marker; a change ⇒ history was reset
 }
 ```
 
-### 4.4 Решения протокола
+### 4.4 Protocol decisions
 
-- `id`-корреляция; `id = 0` зарезервирован под `Push`. Один WS-кадр = один `Command`/`Reply`
-  (батчинг можно добавить позже отдельным типом, не ломая это).
-- `data` — всегда `bytes`: движок универсален, payload — на усмотрение клиентов.
-- `Error.temporary` управляет ретраями SDK.
-- **Истечение токенов — вариант B (refresh по соединению):** SDK через колбэк `getToken()`
-  берёт у внешнего бэкенда новый токен и шлёт его в `RefreshRequest` / `SubRefreshRequest`.
-  Соединение/подписка живут дальше — без реконнекта, без presence-шума, без reconnect storm.
-- **Версионирование:** мажор — в пакете proto (`socket.v1`); согласование через WS-subprotocol
-  (`Sec-WebSocket-Protocol: socket.v1`) / SSE-квери (`?v=1`). Внутри мажора — только аддитивные
-  изменения (номера полей не переиспользуем). SDK обязан **безопасно скипать неизвестные**
-  `oneof`-варианты `Push`. `protocol_version` в `ConnectRequest` — для диагностики/мягких гейтов;
-  несовпадение мажора → `Disconnect{reconnect:false}`.
+- `id`-correlation; `id = 0` is reserved for `Push`. One WS frame = one `Command`/`Reply`
+  (batching can be added later as a separate type without breaking this).
+- `data` — always `bytes`: the engine is universal, the payload is up to the clients.
+- `Error.temporary` drives SDK retries.
+- **Token expiration — variant B (per-connection refresh):** via the `getToken()` callback the SDK
+  fetches a new token from the external backend and sends it in `RefreshRequest` / `SubRefreshRequest`.
+  The connection/subscription lives on — without a reconnect, without presence noise, without a reconnect storm.
+- **Versioning:** the major version is in the proto package (`socket.v1`); negotiation via the WS subprotocol
+  (`Sec-WebSocket-Protocol: socket.v1`) / SSE query (`?v=1`). Within a major — only additive
+  changes (field numbers are not reused). The SDK must **safely skip unknown**
+  `oneof` variants of `Push`. `protocol_version` in `ConnectRequest` — for diagnostics/soft gates;
+  a major mismatch → `Disconnect{reconnect:false}`.
 
 ---
 
-## 5. Аутентификация и права
+## 5. Authentication and permissions
 
-Модель Centrifugo: токены выдаёт **внешний бэкенд**, движок только проверяет подпись.
+The Centrifugo model: tokens are issued by the **external backend**, the engine only verifies the signature.
 
-### 5.1 Connection JWT с capability-паттернами
+### 5.1 Connection JWT with capability patterns
 
-В connection JWT — claim `channels` со списком разрешённых **glob-паттернов** и прав:
+In the connection JWT — a `channels` claim with a list of allowed **glob patterns** and permissions:
 
 ```json
 {
@@ -267,62 +267,62 @@ message StreamPosition {
 }
 ```
 
-- На `subscribe` движок матчит запрошенный канал против паттернов; совпало → пускает.
-- Динамика сохраняется: клиент свободно под/отписывается **в пределах выданных паттернов**,
-  без похода в бэкенд на каждую подписку.
-- `allow` маппится на методы: `subscribe`→`sub`, `publish`→`pub`, `presence`→`presence`,
+- On `subscribe` the engine matches the requested channel against the patterns; a match → it lets it through.
+- Dynamism is preserved: the client freely subscribes/unsubscribes **within the granted patterns**,
+  without a trip to the backend on every subscription.
+- `allow` maps onto methods: `subscribe`→`sub`, `publish`→`pub`, `presence`→`presence`,
   `history`→`history`.
 
-### 5.2 Glob-семантика
+### 5.2 Glob semantics
 
-- Разделитель сегментов — `:`. Namespace = **первый сегмент** (`chat:room:42` → ns `chat`).
-- `*` — **один сегмент**: `news:*` ловит `news:sports`, но не `news:sports:football`.
-- `**` — **globstar** (любое число сегментов): `news:**` ловит оба.
+- The segment separator is `:`. Namespace = the **first segment** (`chat:room:42` → ns `chat`).
+- `*` — **one segment**: `news:*` catches `news:sports`, but not `news:sports:football`.
+- `**` — **globstar** (any number of segments): `news:**` catches both.
 
-### 5.3 Разделение ответственности namespace ↔ JWT
+### 5.3 Separation of responsibility namespace ↔ JWT
 
-Ортогонально:
+Orthogonal:
 
-- **Namespace задаёт ворота** — разрешено ли действие и **нужен ли токен**.
-- **JWT-capability выдаёт право** конкретному юзеру, когда ворота требуют токен.
+- **The namespace sets the gate** — whether an action is allowed and **whether a token is required**.
+- **The JWT capability grants the right** to a specific user when the gate requires a token.
 
-Режимы доступа на действие (`subscribe`/`publish`/`presence`/`history`):
+Per-action access modes (`subscribe`/`publish`/`presence`/`history`):
 
-| Режим | Кто может |
+| Mode | Who can |
 |---|---|
-| `off` | Никто из клиентов (например, publish — только Server API) |
-| `public` | Любой, без токена |
-| `token` | Только при совпадающем паттерне в JWT (или sub-токене) |
+| `off` | No client (e.g. publish — only the Server API) |
+| `public` | Anyone, without a token |
+| `token` | Only with a matching pattern in the JWT (or a sub-token) |
 
-### 5.4 Слой защиты соединения (до JWT)
+### 5.4 Connection protection layer (before JWT)
 
-До проверки токена работает сетевой слой (`[server.security]`, `[server.conn_limits]`):
+Before the token check, the network layer works (`[server.security]`, `[server.conn_limits]`):
 
-- **Origin allowlist** — защита от CSWSH (браузер шлёт `Origin` при WS-апгрейде).
-- **CORS** — для HTTP-API/SSE (кросс-доменные браузерные запросы).
-- **trusted_proxies** — корректный client-IP из `X-Forwarded-For` за LB.
-- **Лимиты соединений** (на ноду, локально): `max_connections[_per_ip]`, `connect_rate_per_ip`
-  (анти-флуд), `handshake_timeout` (анти slow-loris), `idle_timeout`.
-- **write_buffer_limit** — дисконнект медленного потребителя (защита памяти ноды в fan-out).
-- `require_subprotocol`, `ip_allow/deny`, опц. `[server.tls]`.
-- Глобальный `max_connections_per_user` (по кластеру) — через Redis, отложено.
+- **Origin allowlist** — protection against CSWSH (the browser sends `Origin` on a WS upgrade).
+- **CORS** — for the HTTP API/SSE (cross-origin browser requests).
+- **trusted_proxies** — the correct client IP from `X-Forwarded-For` behind an LB.
+- **Connection limits** (per node, locally): `max_connections[_per_ip]`, `connect_rate_per_ip`
+  (anti-flood), `handshake_timeout` (anti slow-loris), `idle_timeout`.
+- **write_buffer_limit** — disconnect a slow consumer (protecting node memory in fan-out).
+- `require_subprotocol`, `ip_allow/deny`, opt. `[server.tls]`.
+- Global `max_connections_per_user` (across the cluster) — via Redis, deferred.
 
-### Цепочка проверки `subscribe chat:room:42`:
+### Validation chain for `subscribe chat:room:42`:
 
 ```
-1. namespace = "chat" → найти в конфиге (нет → unknown_namespace, если strict)
-2. access.subscribe == token ⇒ нужен токен
-3. найти в JWT.channels паттерн, матчащий канал, с allow ⊇ ["sub"]
-4. проверить max_subscribers, rate_limit.subscribe
-5. ОК → подписка; при history_size>0 — отдать StreamPosition / recovery
+1. namespace = "chat" → find it in the config (none → unknown_namespace, if strict)
+2. access.subscribe == token ⇒ a token is required
+3. find in JWT.channels a pattern matching the channel, with allow ⊇ ["sub"]
+4. check max_subscribers, rate_limit.subscribe
+5. OK → subscribe; if history_size>0 — return StreamPosition / recovery
 ```
 
 ---
 
-## 6. Конфигурация (`config.toml`)
+## 6. Configuration (`config.toml`)
 
-TOML (нативно для Rust через `serde` + `toml`). `defaults` и каждый `namespaces.<имя>` —
-один тип `NamespaceConfig`; незаданные поля наследуются из `defaults`.
+TOML (native to Rust via `serde` + `toml`). `defaults` and each `namespaces.<name>` —
+one `NamespaceConfig` type; unset fields are inherited from `defaults`.
 
 ```toml
 [server]
@@ -335,31 +335,31 @@ path     = "/connection/websocket"
 max_message_size = "65536"
 ping_interval    = "25s"
 
-[server.sse]                     # SSE-фолбэк (для сетей, режущих WS); делит HTTP-сервер с ws
+[server.sse]                     # SSE fallback (for networks that cut WS); shares the HTTP server with ws
 enabled       = true
 path          = "/connection/sse"      # downstream (EventSource, GET)
 emit_path     = "/connection/sse/emit" # upstream (Command, POST, X-Session-Id)
 keepalive     = "25s"
 
-[server.security]                # защита на уровне рукопожатия/сети (ДО JWT)
-allowed_origins        = ["https://app.example.com", "https://*.example.com"]  # CSWSH; пусто=не проверять
-cors_allowed_origins   = ["https://app.example.com"]   # CORS для HTTP-API/SSE
+[server.security]                # protection at the handshake/network level (BEFORE JWT)
+allowed_origins        = ["https://app.example.com", "https://*.example.com"]  # CSWSH; empty=do not check
+cors_allowed_origins   = ["https://app.example.com"]   # CORS for the HTTP API/SSE
 cors_allow_credentials = true
-trusted_proxies        = ["10.0.0.0/8", "127.0.0.1/32"]  # кому верить в X-Forwarded-For
-ip_allow               = []      # пусто = все; ip_deny приоритетнее
+trusted_proxies        = ["10.0.0.0/8", "127.0.0.1/32"]  # who to trust in X-Forwarded-For
+ip_allow               = []      # empty = all; ip_deny takes priority
 ip_deny                = []
 
-[server.conn_limits]             # лимиты соединений (локально на ноде)
-max_connections          = 0     # 0 = без лимита (на ноду)
+[server.conn_limits]             # connection limits (locally on the node)
+max_connections          = 0     # 0 = no limit (per node)
 max_connections_per_ip   = 100
-max_connections_per_user = 0     # 0 = без лимита; глобально (Redis) — позже
-connect_rate_per_ip      = { rate = 10, burst = 20 }   # анти connection-flood
-handshake_timeout        = "5s"  # успеть прислать валидный Connect (анти slow-loris)
-idle_timeout             = "60s" # нет ping/активности → закрыть
-write_buffer_limit       = "1MB" # переполнил исходящий буфер → дисконнект (медленный потребитель)
-require_subprotocol      = true  # требовать Sec-WebSocket-Protocol: socket.v1
+max_connections_per_user = 0     # 0 = no limit; global (Redis) — later
+connect_rate_per_ip      = { rate = 10, burst = 20 }   # anti connection-flood
+handshake_timeout        = "5s"  # must send a valid Connect in time (anti slow-loris)
+idle_timeout             = "60s" # no ping/activity → close
+write_buffer_limit       = "1MB" # overflowed the outgoing buffer → disconnect (slow consumer)
+require_subprotocol      = true  # require Sec-WebSocket-Protocol: socket.v1
 
-[server.tls]                     # опц.; обычно TLS терминируется на LB/прокси
+[server.tls]                     # opt.; usually TLS is terminated at the LB/proxy
 enabled     = false
 cert_path   = "/etc/socket/tls/cert.pem"
 key_path    = "/etc/socket/tls/key.pem"
@@ -369,32 +369,32 @@ min_version = "1.2"
 listen = "0.0.0.0:8001"
 path   = "/api"
 
-[server.grpc_api]                # обязателен, не опционален
+[server.grpc_api]                # required, not optional
 listen = "0.0.0.0:8002"
 
 [server.admin]
-listen   = "127.0.0.1:8003"      # дефолт — localhost
+listen   = "127.0.0.1:8003"      # default — localhost
 enabled  = true
-password = "${ADMIN_PASSWORD}"   # пусто + публичный listen ⇒ отказ старта
+password = "${ADMIN_PASSWORD}"   # empty + public listen ⇒ refuses to start
 
-[server.health]                  # health/readiness для k8s/LB
-listen = "0.0.0.0:8004"          # отдельный порт; /health (liveness), /ready (readiness)
+[server.health]                  # health/readiness for k8s/LB
+listen = "0.0.0.0:8004"          # separate port; /health (liveness), /ready (readiness)
 
 [redis]
 url             = "redis://127.0.0.1:6379"
 prefix          = "socket"
 idempotency_ttl = "5m"
-node_heartbeat  = "5s"           # нода пишет heartbeat в Redis → info агрегирует кластер
+node_heartbeat  = "5s"           # the node writes a heartbeat to Redis → info aggregates the cluster
 
-[shutdown]                       # graceful drain на деплое/скейл-дауне
-drain_timeout    = "30s"         # ждать слива соединений перед остановкой
-reconnect_advice = true          # рассылать Disconnect{reconnect:true}
+[shutdown]                       # graceful drain on deploy/scale-down
+drain_timeout    = "30s"         # wait for connections to drain before stopping
+reconnect_advice = true          # broadcast Disconnect{reconnect:true}
 
-[events]                         # опц. уведомления бэкенда о жизненном цикле (НЕ авторизация)
+[events]                         # opt. backend notifications about lifecycle (NOT authorization)
 enabled  = false
 endpoint = "https://app.example.com/socket/events"
 types    = ["connected", "disconnected", "subscribed", "unsubscribed"]
-transport = "http"               # http (батч-вебхук) | grpc (стрим)
+transport = "http"               # http (batch webhook) | grpc (stream)
 
 [telemetry]
 log_format      = "json"         # json | text
@@ -404,7 +404,7 @@ otlp_endpoint   = "http://localhost:4317"
 [auth.jwt]
 algorithm      = "HS256"
 hmac_secret    = "${JWT_HMAC_SECRET}"
-# либо: algorithm = "RS256", jwks_url = "https://app.example.com/.well-known/jwks.json"
+# or: algorithm = "RS256", jwks_url = "https://app.example.com/.well-known/jwks.json"
 audience       = "socket"
 channels_claim = "channels"
 
@@ -419,18 +419,18 @@ allow = ["publish","broadcast"]
 [defaults]
 presence        = false
 join_leave      = false
-history_size    = 0              # 0 ⇒ канал НЕ recoverable
+history_size    = 0              # 0 ⇒ the channel is NOT recoverable
 history_ttl     = "0s"
-max_subscribers = 0              # 0 = без лимита
+max_subscribers = 0              # 0 = no limit
 name_max_len    = 255
 [defaults.access]
 subscribe = "token"
 publish   = "off"
 presence  = "token"
 history   = "token"
-strict_namespaces = true         # канал без известного ns → отказ
+strict_namespaces = true         # channel with an unknown ns → reject
 
-[limits]                          # глобальные потолки на соединение (локально на ноде)
+[limits]                          # global per-connection ceilings (locally on the node)
 max_channels_per_connection = 1000
 max_commands_per_second     = 100
 
@@ -456,7 +456,7 @@ presence  = "token"
 history   = "token"
 [namespaces.chat.rate_limit]
 publish   = { rate = 20, burst = 40, scope = "client" }  # "20/s" = { rate=20, burst=20 }
-subscribe = { rate = 10, burst = 10, scope = "client" }  # scope: client(лок.) | channel | user(Redis)
+subscribe = { rate = 10, burst = 10, scope = "client" }  # scope: client(local) | channel | user(Redis)
 
 [namespaces.user]
 history_size = 50
@@ -468,41 +468,41 @@ presence  = "off"
 history   = "token"
 ```
 
-> **Архив (БД) в MVP отсутствует.** История и recovery полностью на Redis. Секция `[archive]`
-> и durable-бэкенды (rqlite/sqlite/Postgres) — будущее расширение за trait `HistoryStore`,
-> в MVP не реализуется.
+> **There is no archive (DB) in the MVP.** History and recovery are entirely on Redis. The `[archive]`
+> section and durable backends (rqlite/sqlite/Postgres) — a future extension behind a `HistoryStore` trait,
+> not implemented in the MVP.
 
-**Особенности:** секреты через `${ENV}` (раскрытие при загрузке), длительности строками
-(`"10m"`), `api_keys` — массив таблиц. **Hot-reload** по `SIGHUP` / Server API `reload` →
-атомарная подмена `Arc<Config>`, живые соединения не рвутся.
+**Specifics:** secrets via `${ENV}` (expanded at load time), durations as strings
+(`"10m"`), `api_keys` — an array of tables. **Hot-reload** on `SIGHUP` / Server API `reload` →
+atomic swap of `Arc<Config>`, live connections are not dropped.
 
 ---
 
-## 7. Hub и recovery
+## 7. Hub and recovery
 
-### 7.1 Что где лежит
+### 7.1 What lives where
 
-**В памяти каждой ноды (только локальная маршрутизация):**
+**In each node's memory (only local routing):**
 
 ```rust
 connections: DashMap<ClientId, ConnHandle>
 //   ConnHandle = { tx: mpsc::Sender<Reply>, user_id, granted_patterns, subs: HashSet<Channel> }
-channels: DashMap<Channel, HashSet<ClientId>>   // канал → ЛОКАЛЬНЫЕ подписчики
+channels: DashMap<Channel, HashSet<ClientId>>   // channel → LOCAL subscribers
 ```
 
-На каждое соединение — writer-задача, читающая `Reply` из своего `mpsc`. Хаб никогда не
-пишет в сокет напрямую.
+Each connection has a writer task reading `Reply` from its own `mpsc`. The hub never
+writes to the socket directly.
 
-**В Redis (общее состояние кластера):** pub/sub (fan-out между нодами), per-channel stream
-(история + `offset`), `epoch`, presence-хэш, control-канал, кэш идемпотентности.
+**In Redis (shared cluster state):** pub/sub (fan-out between nodes), per-channel stream
+(history + `offset`), `epoch`, presence hash, control channel, idempotency cache.
 
-### 7.2 offset и epoch
+### 7.2 offset and epoch
 
-- `offset` — монотонный счётчик сообщений **в канале**.
-- `epoch` — случайная строка, генерится при создании потока канала; меняется при потере
-  потока. Клиент сравнивает `epoch`: не совпал ⇒ recovery невозможен, нужен полный refetch.
+- `offset` — a monotonic message counter **within a channel**.
+- `epoch` — a random string generated when the channel stream is created; it changes when the
+  stream is lost. The client compares `epoch`: a mismatch ⇒ recovery is impossible, a full refetch is needed.
 
-### 7.3 Publish в recoverable-канал (атомарно, Lua в Redis)
+### 7.3 Publish into a recoverable channel (atomic, Lua in Redis)
 
 ```
 1. offset = INCR seq:{channel}
@@ -510,266 +510,266 @@ channels: DashMap<Channel, HashSet<ClientId>>   // канал → ЛОКАЛЬН
 3. PUBLISH ch:{channel}  Publication{ offset, epoch, data }
 ```
 
-Ноды с локальными подписчиками получают `PUBLISH` и делают локальный fan-out. Подписка
-ноды на Redis-канал **ленивая**: первый локальный подписчик → `SUBSCRIBE`, последний ушёл →
+Nodes with local subscribers receive the `PUBLISH` and do a local fan-out. A node's subscription
+to the Redis channel is **lazy**: the first local subscriber → `SUBSCRIBE`, the last one left →
 `UNSUBSCRIBE`.
 
-### 7.4 Recovery без гонок
+### 7.4 Recovery without races
 
 ```
-1. SUBSCRIBE на live ПЕРВЫМ; входящие live-публикации буферизовать (не отдавать)
-2. сравнить epoch: не совпал → recovered=false, отдать текущий position
-3. прочитать hist:{channel} с offset > N (XRANGE), не больше N последних
-     - разрыв больше хранимой истории → recovered=false (клиент делает refetch)
-4. слить пропущенное + буфер live, дедуп по offset, упорядочить
-5. отдать в SubscribeResult.publications, recovered=true; дальше live обычными Push
+1. SUBSCRIBE to live FIRST; buffer incoming live publications (do not deliver)
+2. compare epoch: mismatch → recovered=false, return the current position
+3. read hist:{channel} with offset > N (XRANGE), no more than the last N
+     - a gap larger than the stored history → recovered=false (the client does a refetch)
+4. merge the missed ones + the live buffer, dedup by offset, order
+5. return in SubscribeResult.publications, recovered=true; afterward live via regular Push
 ```
 
-Гарантия: ни дыр, ни дублей (live подписан раньше чтения истории, дедуп по `offset`).
+Guarantee: no gaps, no duplicates (live is subscribed before reading history, dedup by `offset`).
 
-### 7.5 Падение ноды
+### 7.5 Node failure
 
-Соединения оборвались → клиенты по reconnect попадают на другую ноду и делают recover.
-Работает, потому что история и `offset` — в Redis, а не в памяти ноды.
+Connections drop → clients on reconnect land on another node and do a recover.
+It works because history and `offset` are in Redis, not in the node's memory.
 
 ### 7.6 Presence
 
-`presence:{channel}` — Redis-хэш `clientId → ClientInfo` с TTL на запись (heartbeat по
-`ping_interval`). Отписка/дисконнект → удаление. `Join`/`Leave` рассылаются тем же `PUBLISH`.
-TTL защищает от «призраков» при жёстком падении ноды.
+`presence:{channel}` — a Redis hash `clientId → ClientInfo` with a per-entry TTL (heartbeat by
+`ping_interval`). Unsubscribe/disconnect → removal. `Join`/`Leave` are broadcast by the same `PUBLISH`.
+The TTL protects against "ghosts" on a hard node failure.
 
-### 7.7 Гарантии доставки
+### 7.7 Delivery guarantees
 
-- **Recoverable-каналы** (`history_size > 0`): фактически **at-least-once** (клиент детектит
-  разрыв по `offset`, дубли отсекаются).
-- **Не-recoverable-каналы**: **at-most-once** (чистый fan-out, без хранения).
+- **Recoverable channels** (`history_size > 0`): effectively **at-least-once** (the client detects
+  a gap by `offset`, duplicates are cut off).
+- **Non-recoverable channels**: **at-most-once** (pure fan-out, no storage).
 
-### 7.8 Эфемерные публикации (transient)
+### 7.8 Ephemeral publications (transient)
 
-`PublishRequest.transient = true` → публикация рассылается подписчикам, но **минует** Lua-путь
-истории: не инкрементит `offset`, не пишется в `hist:{channel}`. At-most-once, не участвует в
-recovery. Для typing-индикаторов, курсоров, «эфемерных» сигналов — даже в recoverable-namespace,
-чтобы не засорять историю и не жечь `offset`.
+`PublishRequest.transient = true` → the publication is broadcast to subscribers but **bypasses** the Lua
+history path: it does not increment `offset`, is not written to `hist:{channel}`. At-most-once, not part of
+recovery. For typing indicators, cursors, "ephemeral" signals — even in a recoverable namespace,
+so as not to clutter history or burn `offset`.
 
-### 7.9 Масштабирование fan-out (горячие каналы)
+### 7.9 Scaling fan-out (hot channels)
 
-- **Локальный history-кэш на ноде** (ring-buffer свежих публикаций): при массовом одновременном
-  `subscribe` нода отдаёт recovery-окно из памяти, не делая `XRANGE` к Redis на каждого
-  подписчика → нет стампеда на Redis. (Оптимизация за швом, не MVP-блокер.)
-- **Потолок очень горячего канала**: Redis публикует раз на ноду, но локальный fan-out на ноде
-  (N подписчиков) — естественный потолок CPU/памяти. Смягчается числом нод, батчингом записи и
-  `write_buffer_limit`. Сверхгорячие каналы (миллионы) — шардировать на уровне приложения
-  (внутренний шардинг ломал бы ordering).
+- **Local history cache on the node** (a ring buffer of recent publications): on a mass simultaneous
+  `subscribe` the node serves the recovery window from memory, without an `XRANGE` to Redis per
+  subscriber → no stampede on Redis. (An optimization behind the seam, not an MVP blocker.)
+- **Ceiling of a very hot channel**: Redis publishes once per node, but the local fan-out on the node
+  (N subscribers) is a natural CPU/memory ceiling. Mitigated by the number of nodes, write batching, and
+  `write_buffer_limit`. Super-hot channels (millions) — shard at the application level
+  (internal sharding would break ordering).
 
-### 7.10 Граница durability (нотификации, гарантированная доставка)
+### 7.10 Durability boundary (notifications, guaranteed delivery)
 
-Движок — это **live + короткий recovery** (окно `history_size`/`history_ttl` в Redis), **не**
-durable-инбокс. При офлайне дольше окна `recovered=false` по каналу → приложение **дочитывает
-пропущенное из своего бэкенда** (его БД — система записи), движок продолжает live. «Гарантированная
-доставка» нотификаций достигается этой связкой, а не хранением в движке. Сам мобильный push
-(APNs/FCM при отсутствии WS) — вне scope; бэкенд триггерит его по `[events].disconnected` +
-запросу «юзер онлайн?» (см. Server API).
+The engine is **live + short recovery** (the `history_size`/`history_ttl` window in Redis), **not** a
+durable inbox. When offline longer than the window `recovered=false` for a channel → the application
+**reads the missed messages from its own backend** (its DB is the system of record), the engine continues
+live. "Guaranteed delivery" of notifications is achieved by this pairing, not by storage in the engine. The
+mobile push itself (APNs/FCM when there is no WS) is out of scope; the backend triggers it on
+`[events].disconnected` + a "is the user online?" query (see Server API).
 
-### 7.11 Быстрый реконнект без потерь
+### 7.11 Fast reconnect without loss
 
-Окружения вроде Cloudflare рвут WS периодически (~каждые 100с) → реконнектов много. Цель:
-реконнект дёшев, без потерь, без presence-флапа.
+Environments like Cloudflare cut WS periodically (~every 100s) → there are many reconnects. The goal:
+a reconnect is cheap, lossless, without presence flap.
 
-- **Подписки помнит SDK** (источник истины): реестр `{ channel → {last_position, sub_token?} }`,
-  `last_position` обновляется по приходящим публикациям. Сервер по сессии **stateless** —
-  реконнект переживает даже рестарт ноды. (Server-side resume по `session` — опц. оптимизация.)
-- **Восстановление за 1 RTT:** на реконнекте SDK шлёт **один** `ConnectRequest` с картой `subs`
-  (канал → recover + position). Сервер делает auth один раз, восстанавливает все подписки и
-  гонит recovery по каждому каналу; `ConnectResult.subs` несёт результат каждой. Вместо
-  `1 connect + N subscribe` round-trip'ов.
-- **JWT переиспользуется:** за 30–100с токен не протух → реконнект **не ходит** в прикладной
-  бэкенд за токеном. Шторм реконнектов не бьёт по бэкенду токенов.
-- **Гашение presence-флапа:** при обрыве транспорта `Leave` **не** шлётся сразу — запись presence
-  живёт по TTL (например, 60с) > интервала реконнекта. Реконнект внутри окна обновляет запись,
-  `Join`/`Leave` не генерятся. `Leave` — только при явной отписке/`disconnect` или по TTL.
-- **Граница losslessness:** разрыв шире истории канала или сменился `epoch` → `recovered=false`
-  по каналу, SDK делает чистую переподписку + сигнал «refetch» приложению (контролируемая
-  деградация, не молчаливая потеря).
-- **Анти-шторм:** jittered backoff в SDK размазывает синхронные реконнекты (CDN рвёт многих разом).
+- **The SDK remembers subscriptions** (the source of truth): a registry `{ channel → {last_position, sub_token?} }`,
+  `last_position` is updated by incoming publications. The server is **stateless** per session —
+  a reconnect survives even a node restart. (Server-side resume by `session` — an opt. optimization.)
+- **Restore in 1 RTT:** on a reconnect the SDK sends **one** `ConnectRequest` with a `subs` map
+  (channel → recover + position). The server authenticates once, restores all subscriptions, and
+  runs recovery for each channel; `ConnectResult.subs` carries the result of each. Instead of
+  `1 connect + N subscribe` round-trips.
+- **JWT is reused:** in 30–100s the token has not expired → the reconnect does **not** go to the application
+  backend for a token. A reconnect storm does not hit the token backend.
+- **Damping presence flap:** on a transport break a `Leave` is **not** sent immediately — the presence entry
+  lives by TTL (e.g. 60s) > the reconnect interval. A reconnect within the window updates the entry,
+  `Join`/`Leave` are not generated. `Leave` — only on an explicit unsubscribe/`disconnect` or by TTL.
+- **Losslessness boundary:** a break wider than the channel history or a changed `epoch` → `recovered=false`
+  for the channel, the SDK does a clean re-subscribe + a "refetch" signal to the application (controlled
+  degradation, not silent loss).
+- **Anti-storm:** jittered backoff in the SDK spreads out synchronous reconnects (the CDN cuts many at once).
 
-### 7.12 Архив (долгая история) — вне MVP
+### 7.12 Archive (long history) — out of MVP
 
-В MVP **БД нет**: и recovery, и история целиком на Redis (`history_size`/`history_ttl`).
-Долгая история (аудит, большие диапазоны) — другой юзкейс; заложен **шов** за trait
-`HistoryStore`, но не реализуется. Когда понадобится — добавляется durable-бэкенд
-(rqlite/sqlite/Postgres/libSQL) и один async-архиватор, читающий Redis-стримы батчами, **без
-правок hub** (`offset` уже авторитетен с момента публикации).
+In the MVP **there is no DB**: both recovery and history are entirely on Redis (`history_size`/`history_ttl`).
+Long history (audit, large ranges) — a different use case; a **seam** is laid behind a `HistoryStore`
+trait, but not implemented. When needed — a durable backend
+(rqlite/sqlite/Postgres/libSQL) and one async archiver reading Redis streams in batches is added, **without
+hub changes** (`offset` is already authoritative from the moment of publication).
 
 ---
 
-## 8. Server API (публикация и управление)
+## 8. Server API (publishing and management)
 
-Доверенная server-to-server сторона. Оба транспорта — **тонкие адаптеры над единым
-`ApiService`** в `core` (одна реализация логики).
+The trusted server-to-server side. Both transports — **thin adapters over a single
+`ApiService`** in `core` (one logic implementation).
 
-### 8.1 Транспорты и auth
+### 8.1 Transports and auth
 
-- **HTTP/JSON** (`POST /api`) — простая интеграция из любого языка.
-- **gRPC** (tonic) — низкая latency, стриминг; **обязателен в MVP**.
-- Auth — **API-ключ** (не JWT): HTTP-заголовок `Authorization: apikey <secret>` /
-  gRPC-metadata, проверка интерсептором. Ключи и права — в конфиге.
+- **HTTP/JSON** (`POST /api`) — simple integration from any language.
+- **gRPC** (tonic) — low latency, streaming; **required in the MVP**.
+- Auth — an **API key** (not JWT): HTTP header `Authorization: apikey <secret>` /
+  gRPC metadata, checked by an interceptor. Keys and permissions — in the config.
 
-### 8.2 Методы
+### 8.2 Methods
 
-| Метод | Назначение |
+| Method | Purpose |
 |---|---|
-| `publish` | В один канал → `{offset, epoch}` |
-| `broadcast` | Одно сообщение в много каналов |
-| `presence` / `presence_stats` | Полный список / только счётчики |
-| `history` / `history_remove` | Чтение / очистка истории |
-| `subscribe` / `unsubscribe` | Сервер-инициированная под/отписка юзера |
-| `disconnect` | Кик юзера (по `user_id` / `client_id`) |
-| `user_online` | Есть ли активные соединения у юзера + их число (push-vs-realtime, по кластеру) |
-| `channels` | Активные каналы (по glob) |
-| `info` | Ноды, метрики |
-| `batch` | Пачка команд за один RTT |
-| `PublishStream` (gRPC bidi) | Поток публикаций в одном соединении (high-throughput) |
+| `publish` | Into one channel → `{offset, epoch}` |
+| `broadcast` | One message into many channels |
+| `presence` / `presence_stats` | Full list / only counters |
+| `history` / `history_remove` | Read / clear history |
+| `subscribe` / `unsubscribe` | Server-initiated sub/unsub of a user |
+| `disconnect` | Kick a user (by `user_id` / `client_id`) |
+| `user_online` | Whether a user has active connections + their count (push-vs-realtime, across the cluster) |
+| `channels` | Active channels (by glob) |
+| `info` | Nodes, metrics |
+| `batch` | A batch of commands in one RTT |
+| `PublishStream` (gRPC bidi) | A stream of publications over one connection (high-throughput) |
 
-### 8.3 Семантика
+### 8.3 Semantics
 
-- **Единый путь в hub:** publish из Server API идёт через тот же Lua-скрипт, что и клиентский
-  publish. Серверная и клиентская публикация неотличимы для подписчиков.
-- **Идемпотентность:** опциональный `idempotency_key`, кэш `key → result` в Redis с TTL.
-  Ретрай (HTTP или gRPC-стрим) → тот же `{offset}`, без повторной публикации.
-- **Control-канал:** `subscribe`/`unsubscribe`/`disconnect` адресуются соединению на любой
-  ноде через отдельный Redis pub/sub. Нода-владелец соединения выполняет действие.
+- **A single path into the hub:** publish from the Server API goes through the same Lua script as a client
+  publish. Server-side and client-side publications are indistinguishable to subscribers.
+- **Idempotency:** an optional `idempotency_key`, a `key → result` cache in Redis with a TTL.
+  A retry (HTTP or gRPC stream) → the same `{offset}`, without re-publishing.
+- **Control channel:** `subscribe`/`unsubscribe`/`disconnect` are addressed to a connection on any
+  node via a separate Redis pub/sub. The node owning the connection performs the action.
 
 ---
 
 ## 9. Admin / monitoring UI
 
-React + Mantine. Третий, отдельный контур доступа (помимо клиентского JWT и API-ключей).
+React + Mantine. A third, separate access perimeter (besides the client JWT and the API keys).
 
-### 9.1 Аутентификация
+### 9.1 Authentication
 
-`[server.admin].password` → `POST /admin/login` → admin-сессия (httpOnly-cookie). Дефолт —
-бинд на `127.0.0.1`; пустой пароль на публичном интерфейсе ⇒ отказ старта.
+`[server.admin].password` → `POST /admin/login` → an admin session (httpOnly cookie). Default —
+bound to `127.0.0.1`; an empty password on a public interface ⇒ refuses to start.
 
-Способ входа — за швом `AdminAuth` (`[server.admin].auth = "password" | "oidc"`). В MVP —
-**пароль**; OIDC (SSO через Google/Okta/Keycloak, PKCE-flow + маппинг claims) — аддитивная
-реализация на будущее, сессия-cookie выдаётся одинаково.
+The login method is behind the `AdminAuth` seam (`[server.admin].auth = "password" | "oidc"`). In the MVP —
+**password**; OIDC (SSO via Google/Okta/Keycloak, PKCE flow + claims mapping) — an additive
+implementation for the future, the session cookie is issued the same way.
 
-### 9.2 Разделы и компоненты Mantine
+### 9.2 Sections and Mantine components
 
-| Раздел | Компоненты | Источник |
+| Section | Components | Source |
 |---|---|---|
-| Overview | `AppShell`, `Card`, `RingProgress`, `@mantine/charts` | `info` + поток метрик |
-| Channels | `mantine-datatable`, glob-`TextInput`, `Drawer` | `channels`, `presence`, `history` |
+| Overview | `AppShell`, `Card`, `RingProgress`, `@mantine/charts` | `info` + the metrics stream |
+| Channels | `mantine-datatable`, glob `TextInput`, `Drawer` | `channels`, `presence`, `history` |
 | Connections | `mantine-datatable`, `ActionIcon`, `Modal` | `info`, `disconnect` |
 | Publish | `@mantine/form`, `JsonInput` | `publish` / `broadcast` |
-| Namespaces | `@mantine/code-highlight` (TOML) | конфиг + `reload` |
-| Metrics | `@mantine/charts` (`AreaChart`/`LineChart`) | `$metrics` через WS |
+| Namespaces | `@mantine/code-highlight` (TOML) | config + `reload` |
+| Metrics | `@mantine/charts` (`AreaChart`/`LineChart`) | `$metrics` via WS |
 
-### 9.3 Догфудинг + внешний мониторинг
+### 9.3 Dogfooding + external monitoring
 
-- **Live-данные через сам движок:** зарезервированный системный namespace `$` (`$metrics`,
-  `$node:events`), доступный **только** admin-сессии (жёстко в коде). Admin-клиент
-  подписывается обычным SDK — продукт тестирует сам себя.
-- **Prometheus** `/metrics` (text exposition) — для Grafana/Alertmanager; React-UI — быстрый
-  взгляд, не замена observability-стеку.
+- **Live data through the engine itself:** a reserved system namespace `$` (`$metrics`,
+  `$node:events`), accessible **only** to an admin session (hardcoded). The admin client
+  subscribes via the regular SDK — the product tests itself.
+- **Prometheus** `/metrics` (text exposition) — for Grafana/Alertmanager; the React UI is a quick
+  glance, not a replacement for the observability stack.
 
-### 9.4 Сборка
+### 9.4 Build
 
-Vite-статика, раздаётся самим axum по `[server.admin].listen` — один бинарь (движок +
-админка). Графики — дефолт `@mantine/charts` (Recharts); для высокочастотных живых графиков
-запасной вариант — `uPlot` (оптимизация на потом).
-
----
-
-## 10. Документация
-
-**docmd** — zero-config, framework-free SSG (~18kb JS), Markdown-in → static HTML, встроенный
-fuzzy-поиск, container-синтаксис (callouts/tabs/cards), темы, i18n. Не конфликтует с
-Vite/React (отдельный Node-CLI).
-
-- **Автоген:** `proto/*.proto` и config-структуры → `.md` (protocol, server-api,
-  config-reference); docmd подхватывает наравне с рукописными гайдами. Прогон в CI держит
-  доки синхронными с кодом.
-- **Компромисс:** нет встроенного живого playground. При необходимости — публичный роут
-  `/playground` в `web/` (тот же SDK), ссылки из доков. Контент не залочен (обычный Markdown),
-  миграция на другой SSG дешёвая.
+Vite statics, served by axum itself on `[server.admin].listen` — a single binary (engine +
+admin). Charts — by default `@mantine/charts` (Recharts); for high-frequency live charts the
+fallback is `uPlot` (an optimization for later).
 
 ---
 
-## 11. Клиентский SDK (`packages/client-ts`)
+## 10. Documentation
 
-Первоклассный пакет — «библиотека на фронте». Несёт всю клиентскую логику, чтобы прикладной
-код работал на высоком уровне (`subscribe`/`publish`/`on`), не зная протокола.
+**docmd** — a zero-config, framework-free SSG (~18kb JS), Markdown-in → static HTML, built-in
+fuzzy search, container syntax (callouts/tabs/cards), themes, i18n. It does not conflict with
+Vite/React (a separate Node CLI).
 
-**Ответственности:**
+- **Autogen:** `proto/*.proto` and config structures → `.md` (protocol, server-api,
+  config-reference); docmd picks them up alongside the handwritten guides. A CI run keeps the
+  docs in sync with the code.
+- **Trade-off:** there is no built-in live playground. If needed — a public route
+  `/playground` in `web/` (the same SDK), linked from the docs. The content is not locked in (plain Markdown),
+  migration to another SSG is cheap.
 
-- **Транспорт**: WebSocket (дефолт) с авто-фолбэком на SSE; за общим интерфейсом.
-- **Кодирование**: protobuf-es (типы из `packages/proto-gen`).
-- **Реестр подписок** — источник истины: `{ channel → {last_position, sub_token?} }`,
-  `last_position` обновляется по приходящим публикациям.
-- **Реконнект**: jittered backoff, восстановление всех подписок за 1 RTT через `ConnectRequest.subs`,
-  переиспользование кэшированного JWT.
-- **Recovery**: per-channel догон по `offset`/`epoch`; при `recovered=false` — сигнал `needRefetch`.
-- **Токены**: колбэк `getToken()` (connection) и `getSubToken(channel)` (приватные каналы);
-  продление через `RefreshRequest`/`SubRefreshRequest` (вариант B, без реконнекта).
+---
+
+## 11. Client SDK (`packages/client-ts`)
+
+A first-class package — "the library on the frontend". It carries all the client logic so that the
+application code works at a high level (`subscribe`/`publish`/`on`) without knowing the protocol.
+
+**Responsibilities:**
+
+- **Transport**: WebSocket (default) with auto-fallback to SSE; behind a common interface.
+- **Encoding**: protobuf-es (types from `packages/proto-gen`).
+- **Subscription registry** — the source of truth: `{ channel → {last_position, sub_token?} }`,
+  `last_position` is updated by incoming publications.
+- **Reconnect**: jittered backoff, restoring all subscriptions in 1 RTT via `ConnectRequest.subs`,
+  reuse of the cached JWT.
+- **Recovery**: per-channel catch-up by `offset`/`epoch`; on `recovered=false` — a `needRefetch` signal.
+- **Tokens**: the `getToken()` callback (connection) and `getSubToken(channel)` (private channels);
+  renewal via `RefreshRequest`/`SubRefreshRequest` (variant B, without a reconnect).
 - **API**: `connect()`, `newSubscription(channel)`, `sub.on('publication'|'join'|'leave')`,
   `sub.subscribe/unsubscribe()`, `publish/presence/history`.
-- **Версия**: согласует `socket.v1`; безопасно скипает неизвестные `Push`-варианты.
+- **Version**: negotiates `socket.v1`; safely skips unknown `Push` variants.
 
-Тот же пакет переиспользует админка (`web/`) для live-`$metrics` и опц. публичный `/playground`.
+The same package is reused by the admin (`web/`) for live `$metrics` and the opt. public `/playground`.
 
-## 12. Операционка (deploy / shutdown / observability)
+## 12. Operations (deploy / shutdown / observability)
 
-- **Graceful shutdown / дренаж** (`[shutdown]`): по SIGTERM нода перестаёт принимать новые коннекты,
-  `/ready` отдаёт 503 (LB выводит её), живым рассылается `Disconnect{reconnect:true}` → клиенты
-  переподключаются на другие ноды (восстановление за 1 RTT, без потерь), затем — выход по
-  `drain_timeout`. Деплой без массового жёсткого разрыва.
-- **Health/readiness** (`[server.health]`): `/health` (liveness) и `/ready` (readiness; учитывает
-  дренаж и доступность Redis) на отдельном порту для k8s/LB.
-- **Реестр нод** (`redis.node_heartbeat`): каждая нода пишет heartbeat в Redis; Server API `info`
-  и admin Overview агрегируют **весь кластер**, а не одну ноду.
-- **События жизненного цикла** (`[events]`, опц.): `connected`/`disconnected`/`subscribed`/
-  `unsubscribed` → бэкенду (HTTP-батч-вебхук или gRPC-стрим) для аналитики/очистки. Это **не**
-  авторизация (она на JWT), а уведомления.
-- **Observability** (`[telemetry]`): structured logs (`json`), Prometheus `/metrics`, опц.
-  OpenTelemetry-трейсинг (OTLP).
-- **Шардирование Redis pub/sub** (за trait `Broker`): на больших объёмах один pub/sub —
-  бутылочное горлышко; план — Redis 7 `SPUBLISH`/`SSUBSCRIBE` (sharded). Шов заложен, реализация
-  по необходимости.
+- **Graceful shutdown / drain** (`[shutdown]`): on SIGTERM the node stops accepting new connections,
+  `/ready` returns 503 (the LB takes it out), live ones are sent `Disconnect{reconnect:true}` → clients
+  reconnect to other nodes (restore in 1 RTT, lossless), then — exit on
+  `drain_timeout`. A deploy without a mass hard break.
+- **Health/readiness** (`[server.health]`): `/health` (liveness) and `/ready` (readiness; accounts for
+  drain and Redis availability) on a separate port for k8s/LB.
+- **Node registry** (`redis.node_heartbeat`): each node writes a heartbeat to Redis; the Server API `info`
+  and the admin Overview aggregate the **whole cluster**, not a single node.
+- **Lifecycle events** (`[events]`, opt.): `connected`/`disconnected`/`subscribed`/
+  `unsubscribed` → to the backend (HTTP batch webhook or gRPC stream) for analytics/cleanup. This is **not**
+  authorization (that is on the JWT), but notifications.
+- **Observability** (`[telemetry]`): structured logs (`json`), Prometheus `/metrics`, opt.
+  OpenTelemetry tracing (OTLP).
+- **Redis pub/sub sharding** (behind a `Broker` trait): at large volumes a single pub/sub is a
+  bottleneck; the plan — Redis 7 `SPUBLISH`/`SSUBSCRIBE` (sharded). The seam is laid, implementation
+  as needed.
 
-## 13. План реализации (по зависимостям)
+## 13. Implementation plan (by dependencies)
 
-1. **Ядро:** WS-коннект, JWT-auth, sub/unsub по glob-паттернам, in-memory hub (одна нода).
-   + health/readiness, graceful shutdown с первого шага.
-2. **Клиентский SDK** (`client-ts`): транспорт, реестр подписок, реконнект — нужен для проверки ядра.
-3. **Broker-абстракция + Redis** → мультинода (pub/sub fan-out) + реестр нод (heartbeat).
-4. **SSE-транспорт** (фолбэк) в сервере и SDK.
-5. **Server API** (HTTP + gRPC), единый `ApiService`, идемпотентность, control-канал.
-6. **Presence** (join/leave, список онлайн, TTL, гашение флапа).
-7. **История + recovery** (Redis Streams, `offset`/`epoch`, восстановление за 1 RTT без гонок).
-8. **События жизненного цикла** (`[events]`) + observability (Prometheus, опц. tracing).
+1. **Core:** WS connect, JWT auth, sub/unsub by glob patterns, in-memory hub (single node).
+   + health/readiness, graceful shutdown from the first step.
+2. **Client SDK** (`client-ts`): transport, subscription registry, reconnect — needed to test the core.
+3. **Broker abstraction + Redis** → multi-node (pub/sub fan-out) + node registry (heartbeat).
+4. **SSE transport** (fallback) in the server and the SDK.
+5. **Server API** (HTTP + gRPC), a unified `ApiService`, idempotency, control channel.
+6. **Presence** (join/leave, online list, TTL, flap damping).
+7. **History + recovery** (Redis Streams, `offset`/`epoch`, restore in 1 RTT without races).
+8. **Lifecycle events** (`[events]`) + observability (Prometheus, opt. tracing).
 9. **Admin UI** (Mantine) + `$metrics` + Prometheus.
-10. **Docs** (docmd) + автоген из `.proto`/config.
+10. **Docs** (docmd) + autogen from `.proto`/config.
 
 ---
 
-## 14. Решённые вопросы
+## 14. Resolved questions
 
-- ~~Точный формат `rate_limit` и где считать.~~ **Решено:** токен-бакет `{rate, burst, scope}`;
-  в MVP только `scope = client` (локальный, в памяти ноды) + секция `[limits]` на соединение.
-  Глобальные `scope = channel/user` (Redis) — в схеме конфига, реализация отложена. При
-  превышении — `Error{rate_limited, temporary}`, не дисконнект.
-- ~~Транспорт-фолбэки (SSE/HTTP-streaming) — нужны ли.~~ **Решено:** WebSocket + SSE в MVP,
-  оба за trait `Transport`. HTTP-streaming/WebTransport — аддитивно позже.
-- ~~Версионирование протокола.~~ **Решено:** мажор в пакете proto (`socket.v1`) + согласование
-  через WS-subprotocol (`Sec-WebSocket-Protocol: socket.v1`) / SSE-квери (`?v=1`); аддитивные
-  изменения внутри мажора (Protobuf-совместимость); SDK безопасно скипает неизвестные
-  `oneof`-варианты; `protocol_version` в `ConnectRequest` для диагностики; несовпадение мажора →
+- ~~The exact `rate_limit` format and where to count.~~ **Resolved:** a token bucket `{rate, burst, scope}`;
+  in the MVP only `scope = client` (local, in the node's memory) + the `[limits]` section per connection.
+  Global `scope = channel/user` (Redis) — in the config schema, implementation deferred. On
+  exceeding — `Error{rate_limited, temporary}`, not a disconnect.
+- ~~Transport fallbacks (SSE/HTTP-streaming) — whether they are needed.~~ **Resolved:** WebSocket + SSE in the MVP,
+  both behind a `Transport` trait. HTTP-streaming/WebTransport — additively later.
+- ~~Protocol versioning.~~ **Resolved:** the major in the proto package (`socket.v1`) + negotiation
+  via the WS subprotocol (`Sec-WebSocket-Protocol: socket.v1`) / SSE query (`?v=1`); additive
+  changes within a major (Protobuf compatibility); the SDK safely skips unknown
+  `oneof` variants; `protocol_version` in `ConnectRequest` for diagnostics; a major mismatch →
   `Disconnect{reconnect:false}` + `Error{temporary:false}`.
-- ~~Бэкенд истории: только Redis или durable-стор для долгого хранения.~~ **Решено для MVP:**
-  **БД нет** — recovery и история целиком на Redis. Durable-архив (rqlite/sqlite/Postgres) —
-  будущее расширение за trait `HistoryStore`, в MVP не реализуется.
-- Версионирование протокола: как клиент и сервер согласуют версию `.proto`.
-- ~~OIDC для admin UI (вместо пароля).~~ **Решено:** в MVP — пароль; OIDC за швом `AdminAuth`
-  (`auth = "password" | "oidc"`), аддитивно позже.
+- ~~History backend: only Redis or a durable store for long-term retention.~~ **Resolved for the MVP:**
+  **no DB** — recovery and history are entirely on Redis. A durable archive (rqlite/sqlite/Postgres) —
+  a future extension behind a `HistoryStore` trait, not implemented in the MVP.
+- Protocol versioning: how the client and server negotiate the `.proto` version.
+- ~~OIDC for the admin UI (instead of a password).~~ **Resolved:** in the MVP — a password; OIDC behind the `AdminAuth` seam
+  (`auth = "password" | "oidc"`), additively later.
 ```

@@ -1,15 +1,15 @@
 ---
 title: Server API
-description: Серверный API (HTTP + gRPC) для публикации из бэкенда
+description: Server-side API (HTTP + gRPC) for publishing from the backend
 ---
 
-> Сгенерировано автоматически из источников истины. Не редактировать вручную.
+> Generated automatically from the sources of truth. Do not edit manually.
 
-Доверенная server-to-server сторона. gRPC-сервис ниже; HTTP/JSON — те же методы на `POST /api/<method>`. Auth — `Authorization: apikey <key>`.
+Trusted server-to-server side. The gRPC service is below; HTTP/JSON exposes the same methods at `POST /api/<method>`. Auth — `Authorization: apikey <key>`.
 
-## Сервис `ServerApi`
+## Service `ServerApi`
 
-| Метод | Запрос | Ответ | Стрим |
+| Method | Request | Response | Stream |
 |---|---|---|---|
 | `Publish` | `PublishApiRequest` | `PublishApiResponse` | — |
 | `Broadcast` | `BroadcastApiRequest` | `BroadcastApiResponse` | — |
@@ -26,11 +26,11 @@ description: Серверный API (HTTP + gRPC) для публикации и
 | `Batch` | `BatchApiRequest` | `BatchApiResponse` | — |
 | `PublishStream` | `PublishApiRequest` | `PublishApiResponse` | ↑↓ |
 
-## Сообщения
+## Messages
 
 ### PublishApiRequest
 
-| Поле | Тип | № | oneof |
+| Field | Type | # | oneof |
 |---|---|---|---|
 | `channel` | `string` | 1 |  |
 | `data` | `bytes` | 2 |  |
@@ -39,7 +39,7 @@ description: Серверный API (HTTP + gRPC) для публикации и
 
 ### PublishApiResponse
 
-| Поле | Тип | № | oneof |
+| Field | Type | # | oneof |
 |---|---|---|---|
 | `error` | `Error` | 1 |  |
 | `offset` | `uint64` | 2 |  |
@@ -47,7 +47,7 @@ description: Серверный API (HTTP + gRPC) для публикации и
 
 ### BroadcastApiRequest
 
-| Поле | Тип | № | oneof |
+| Field | Type | # | oneof |
 |---|---|---|---|
 | `channels` | `repeated string` | 1 |  |
 | `data` | `bytes` | 2 |  |
@@ -55,33 +55,33 @@ description: Серверный API (HTTP + gRPC) для публикации и
 
 ### BroadcastApiResponse
 
-| Поле | Тип | № | oneof |
+| Field | Type | # | oneof |
 |---|---|---|---|
 | `error` | `Error` | 1 |  |
 | `responses` | `map<string, PublishApiResponse>` | 2 |  |
 
 ### PresenceApiRequest
 
-| Поле | Тип | № | oneof |
+| Field | Type | # | oneof |
 |---|---|---|---|
 | `channel` | `string` | 1 |  |
 
 ### PresenceApiResponse
 
-| Поле | Тип | № | oneof |
+| Field | Type | # | oneof |
 |---|---|---|---|
 | `error` | `Error` | 1 |  |
 | `presence` | `map<string, ClientInfo>` | 2 |  |
 
 ### PresenceStatsApiRequest
 
-| Поле | Тип | № | oneof |
+| Field | Type | # | oneof |
 |---|---|---|---|
 | `channel` | `string` | 1 |  |
 
 ### PresenceStatsApiResponse
 
-| Поле | Тип | № | oneof |
+| Field | Type | # | oneof |
 |---|---|---|---|
 | `error` | `Error` | 1 |  |
 | `num_clients` | `uint32` | 2 |  |
@@ -89,7 +89,7 @@ description: Серверный API (HTTP + gRPC) для публикации и
 
 ### HistoryApiRequest
 
-| Поле | Тип | № | oneof |
+| Field | Type | # | oneof |
 |---|---|---|---|
 | `channel` | `string` | 1 |  |
 | `limit` | `int32` | 2 |  |
@@ -98,7 +98,7 @@ description: Серверный API (HTTP + gRPC) для публикации и
 
 ### HistoryApiResponse
 
-| Поле | Тип | № | oneof |
+| Field | Type | # | oneof |
 |---|---|---|---|
 | `error` | `Error` | 1 |  |
 | `publications` | `repeated Publication` | 2 |  |
@@ -106,45 +106,45 @@ description: Серверный API (HTTP + gRPC) для публикации и
 
 ### HistoryRemoveApiRequest
 
-| Поле | Тип | № | oneof |
+| Field | Type | # | oneof |
 |---|---|---|---|
 | `channel` | `string` | 1 |  |
 
 ### HistoryRemoveApiResponse
 
-| Поле | Тип | № | oneof |
+| Field | Type | # | oneof |
 |---|---|---|---|
 | `error` | `Error` | 1 |  |
 
 ### SubscribeApiRequest
 
-| Поле | Тип | № | oneof |
+| Field | Type | # | oneof |
 |---|---|---|---|
 | `user` | `string` | 1 |  |
 | `channel` | `string` | 2 |  |
 
 ### SubscribeApiResponse
 
-| Поле | Тип | № | oneof |
+| Field | Type | # | oneof |
 |---|---|---|---|
 | `error` | `Error` | 1 |  |
 
 ### UnsubscribeApiRequest
 
-| Поле | Тип | № | oneof |
+| Field | Type | # | oneof |
 |---|---|---|---|
 | `user` | `string` | 1 |  |
 | `channel` | `string` | 2 |  |
 
 ### UnsubscribeApiResponse
 
-| Поле | Тип | № | oneof |
+| Field | Type | # | oneof |
 |---|---|---|---|
 | `error` | `Error` | 1 |  |
 
 ### DisconnectApiRequest
 
-| Поле | Тип | № | oneof |
+| Field | Type | # | oneof |
 |---|---|---|---|
 | `user` | `string` | 1 |  |
 | `client` | `string` | 2 |  |
@@ -153,19 +153,19 @@ description: Серверный API (HTTP + gRPC) для публикации и
 
 ### DisconnectApiResponse
 
-| Поле | Тип | № | oneof |
+| Field | Type | # | oneof |
 |---|---|---|---|
 | `error` | `Error` | 1 |  |
 
 ### UserOnlineApiRequest
 
-| Поле | Тип | № | oneof |
+| Field | Type | # | oneof |
 |---|---|---|---|
 | `user` | `string` | 1 |  |
 
 ### UserOnlineApiResponse
 
-| Поле | Тип | № | oneof |
+| Field | Type | # | oneof |
 |---|---|---|---|
 | `error` | `Error` | 1 |  |
 | `online` | `bool` | 2 |  |
@@ -173,30 +173,30 @@ description: Серверный API (HTTP + gRPC) для публикации и
 
 ### ChannelsApiRequest
 
-| Поле | Тип | № | oneof |
+| Field | Type | # | oneof |
 |---|---|---|---|
 | `pattern` | `string` | 1 |  |
 
 ### ChannelsApiResponse
 
-| Поле | Тип | № | oneof |
+| Field | Type | # | oneof |
 |---|---|---|---|
 | `error` | `Error` | 1 |  |
 | `channels` | `repeated string` | 2 |  |
 
 ### InfoApiRequest
 
-_(пустое сообщение)_
+_(empty message)_
 ### InfoApiResponse
 
-| Поле | Тип | № | oneof |
+| Field | Type | # | oneof |
 |---|---|---|---|
 | `error` | `Error` | 1 |  |
 | `nodes` | `repeated NodeInfo` | 2 |  |
 
 ### NodeInfo
 
-| Поле | Тип | № | oneof |
+| Field | Type | # | oneof |
 |---|---|---|---|
 | `name` | `string` | 1 |  |
 | `num_clients` | `uint32` | 2 |  |
@@ -205,13 +205,13 @@ _(пустое сообщение)_
 
 ### BatchApiRequest
 
-| Поле | Тип | № | oneof |
+| Field | Type | # | oneof |
 |---|---|---|---|
 | `commands` | `repeated Command` | 1 |  |
 
 ### BatchApiResponse
 
-| Поле | Тип | № | oneof |
+| Field | Type | # | oneof |
 |---|---|---|---|
 | `replies` | `repeated Reply` | 1 |  |
 

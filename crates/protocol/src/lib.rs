@@ -1,6 +1,6 @@
-//! Сгенерированные из `proto/socket.proto` типы протокола и gRPC Server API.
+//! Protocol types and the gRPC Server API generated from `proto/socket.proto`.
 //!
-//! `socket.v1` — мажорная версия протокола (см. design-doc, версионирование).
+//! `socket.v1` — the major protocol version (see design doc, versioning).
 
 pub mod v1 {
     tonic::include_proto!("socket.v1");
@@ -8,5 +8,5 @@ pub mod v1 {
 
 pub use v1::*;
 
-/// Текущая мажорная версия клиентского протокола.
+/// Current major version of the client protocol.
 pub const PROTOCOL_VERSION: u32 = 1;

@@ -1,7 +1,7 @@
 {
   "name": "@socket/client",
   "version": "0.1.0",
-  "description": "Клиентский SDK движка: транспорт (WS/SSE), реконнект, реестр подписок, recovery, protobuf",
+  "description": "Engine client SDK: transport (WS/SSE), reconnect, subscription registry, recovery, protobuf",
   "type": "module",
   "main": "dist/index.js",
   "module": "dist/index.js",

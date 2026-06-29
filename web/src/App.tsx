@@ -44,7 +44,7 @@ function Login({ onLogin }: { onLogin: () => void }) {
       await api.login(password);
       onLogin();
     } catch {
-      notifications.show({ color: "red", message: "Неверный пароль" });
+      notifications.show({ color: "red", message: "Wrong password" });
     } finally {
       setBusy(false);
     }
@@ -55,13 +55,13 @@ function Login({ onLogin }: { onLogin: () => void }) {
         <Stack>
           <Title order={3}>Socket — Admin</Title>
           <PasswordInput
-            label="Пароль"
+            label="Password"
             value={password}
             onChange={(e) => setPassword(e.currentTarget.value)}
             onKeyDown={(e) => e.key === "Enter" && submit()}
           />
           <Button loading={busy} onClick={submit}>
-            Войти
+            Sign in
           </Button>
         </Stack>
       </Paper>
@@ -118,17 +118,17 @@ function Overview() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  if (!info) return <Text>Загрузка…</Text>;
+  if (!info) return <Text>Loading…</Text>;
   return (
     <Stack>
       <Title order={3}>Overview · {info.node}</Title>
       <SimpleGrid cols={{ base: 2, md: 4 }}>
-        <Stat label="Соединения" value={info.num_connections} />
-        <Stat label="Каналы" value={info.num_channels} />
-        <Stat label="Опубликовано" value={info.messages_published} />
-        <Stat label="Подписок" value={info.subscriptions} />
-        <Stat label="Открыто всего" value={info.connections_opened} />
-        <Stat label="Закрыто всего" value={info.connections_closed} />
+        <Stat label="Connections" value={info.num_connections} />
+        <Stat label="Channels" value={info.num_channels} />
+        <Stat label="Published" value={info.messages_published} />
+        <Stat label="Subscriptions" value={info.subscriptions} />
+        <Stat label="Opened total" value={info.connections_opened} />
+        <Stat label="Closed total" value={info.connections_closed} />
       </SimpleGrid>
     </Stack>
   );
@@ -147,16 +147,16 @@ function Channels() {
       <Group>
         <Title order={3}>Channels</Title>
         <Button size="xs" variant="light" onClick={load}>
-          Обновить
+          Refresh
         </Button>
       </Group>
       {channels.length === 0 ? (
-        <Text c="dimmed">Нет активных каналов</Text>
+        <Text c="dimmed">No active channels</Text>
       ) : (
         <Table>
           <Table.Thead>
             <Table.Tr>
-              <Table.Th>Канал</Table.Th>
+              <Table.Th>Channel</Table.Th>
               <Table.Th>Presence</Table.Th>
             </Table.Tr>
           </Table.Thead>
@@ -164,7 +164,7 @@ function Channels() {
             {channels.map((c) => (
               <Table.Tr key={c} onClick={() => api.presence(c).then((r) => setUsers((u) => ({ ...u, [c]: r.users })))}>
                 <Table.Td style={{ cursor: "pointer" }}>{c}</Table.Td>
-                <Table.Td>{users[c] ? users[c].join(", ") || "—" : "клик"}</Table.Td>
+                <Table.Td>{users[c] ? users[c].join(", ") || "—" : "click"}</Table.Td>
               </Table.Tr>
             ))}
           </Table.Tbody>
@@ -182,7 +182,7 @@ function Publish() {
     setBusy(true);
     try {
       const r = await api.publish(channel, data);
-      notifications.show({ color: "green", message: `Опубликовано, offset ${r.offset}` });
+      notifications.show({ color: "green", message: `Published, offset ${r.offset}` });
     } catch (e: any) {
       notifications.show({ color: "red", message: String(e.message ?? e) });
     } finally {
@@ -192,10 +192,10 @@ function Publish() {
   return (
     <Stack maw={520}>
       <Title order={3}>Publish</Title>
-      <TextInput label="Канал" placeholder="news:sports" value={channel} onChange={(e) => setChannel(e.currentTarget.value)} />
-      <Textarea label="Сообщение" minRows={3} value={data} onChange={(e) => setData(e.currentTarget.value)} />
+      <TextInput label="Channel" placeholder="news:sports" value={channel} onChange={(e) => setChannel(e.currentTarget.value)} />
+      <Textarea label="Message" minRows={3} value={data} onChange={(e) => setData(e.currentTarget.value)} />
       <Button loading={busy} onClick={submit} disabled={!channel}>
-        Опубликовать
+        Publish
       </Button>
     </Stack>
   );

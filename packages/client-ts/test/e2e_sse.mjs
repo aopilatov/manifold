@@ -1,11 +1,11 @@
-// E2E SSE-транспорта: тот же сценарий, но через EventSource + POST (а не WebSocket).
+// E2E of the SSE transport: same scenario, but over EventSource + POST (not WebSocket).
 import crypto from "node:crypto";
-import { EventSource } from "undici"; // в браузере EventSource глобальный; в Node — полифилл
+import { EventSource } from "undici"; // EventSource is global in the browser; in Node it's a polyfill
 globalThis.EventSource ??= EventSource;
 import { SocketClient } from "../dist/index.js";
 
 const SECRET = "dev-secret";
-const WS_URL = "ws://127.0.0.1:18000/connection/websocket"; // SDK сам выведет SSE-URL
+const WS_URL = "ws://127.0.0.1:18000/connection/websocket"; // the SDK derives the SSE URL itself
 
 const b64url = (s) => Buffer.from(s).toString("base64url");
 function mintJwt(payload, secret) {
@@ -23,7 +23,7 @@ const fail = (m) => {
   process.exit(1);
 };
 
-if (typeof EventSource === "undefined") fail("в этом Node нет global EventSource");
+if (typeof EventSource === "undefined") fail("this Node has no global EventSource");
 
 const client = new SocketClient({ url: WS_URL, transport: "sse", getToken: async () => token });
 

@@ -1,5 +1,5 @@
-//! События жизненного цикла соединений → прикладной бэкенд (опц., `[events]`).
-//! Это НЕ авторизация (она на JWT) — уведомления для аналитики/очистки.
+//! Connection lifecycle events → application backend (optional, `[events]`).
+//! This is NOT authorization (that's on the JWT) — notifications for analytics/cleanup.
 
 use serde::Serialize;
 
@@ -14,12 +14,12 @@ pub struct LifecycleEvent {
     pub channel: Option<String>,
 }
 
-/// Куда уходят события. Реализация HTTP-вебхука — в server-крейте.
+/// Where events go. The HTTP webhook implementation lives in the server crate.
 pub trait EventSink: Send + Sync {
     fn emit(&self, event: LifecycleEvent);
 }
 
-/// По умолчанию — никуда.
+/// By default — nowhere.
 pub struct NoopSink;
 impl EventSink for NoopSink {
     fn emit(&self, _event: LifecycleEvent) {}

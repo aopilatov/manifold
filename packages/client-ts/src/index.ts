@@ -1,4 +1,4 @@
-// Публичный API клиентского SDK.
+// Public API of the client SDK.
 //
 //   const client = new SocketClient({ url, getToken });
 //   await client.connect();

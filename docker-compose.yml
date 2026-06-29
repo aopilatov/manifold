@@ -1,13 +1,13 @@
 services:
   redis:
     image: redis:7-alpine
-    command: ["redis-server", "--appendonly", "yes"]   # AOF: durability recovery-окна
+    command: ["redis-server", "--appendonly", "yes"]   # AOF: durability for the recovery window
     ports:
       - "6379:6379"
     volumes:
       - redis-data:/data
 
-  # Движок (после сборки образа). Для dev обычно запускается через `just server`.
+  # Engine (built image). For dev usually run via `just server`.
   server:
     build: .
     depends_on:

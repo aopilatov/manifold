@@ -1,4 +1,4 @@
-//! End-to-end тесты ядра: auth-гейтинг, fan-out, recovery — через ApiService (MemoryBroker).
+//! End-to-end core tests: auth gating, fan-out, recovery — via ApiService (MemoryBroker).
 
 use std::sync::Arc;
 use std::time::Duration;
@@ -39,8 +39,8 @@ async fn next_pub(rx: &mut mpsc::Receiver<Reply>) -> socket_protocol::Publicatio
     loop {
         let reply = tokio::time::timeout(Duration::from_secs(1), rx.recv())
             .await
-            .expect("timeout: публикация не пришла")
-            .expect("канал закрыт");
+            .expect("timeout: publication did not arrive")
+            .expect("channel closed");
         if let Some(reply::Payload::Push(p)) = reply.payload {
             if let Some(push::Event::Pub(pb)) = p.event {
                 return pb;
@@ -66,7 +66,7 @@ async fn publish_fans_out_to_subscribers() {
 
     let got = next_pub(&mut rx_b).await;
     assert_eq!(got.data, b"hello");
-    assert_eq!(got.offset, 1, "chat recoverable ⇒ offset присвоен");
+    assert_eq!(got.offset, 1, "chat recoverable ⇒ offset assigned");
 }
 
 #[tokio::test]
@@ -119,7 +119,7 @@ async fn transient_publish_skips_history() {
         })
         .await
         .unwrap();
-    assert!(res.publications.is_empty(), "transient не пишется в историю");
+    assert!(res.publications.is_empty(), "transient is not written to history");
 }
 
 #[tokio::test]
@@ -148,7 +148,7 @@ async fn recovery_returns_missed_publications() {
         .await
         .unwrap();
 
-    assert!(res.recovered, "разрыв в пределах истории");
-    assert_eq!(res.publications.len(), 2, "пропущены offset 2 и 3");
+    assert!(res.recovered, "gap within history range");
+    assert_eq!(res.publications.len(), 2, "missed offset 2 and 3");
     assert_eq!(res.publications[0].offset, 2);
 }

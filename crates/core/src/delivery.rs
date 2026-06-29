@@ -1,4 +1,4 @@
-//! Мост брокер → hub: брокер отдаёт пришедшие (в т.ч. с других нод) Reply локальным подписчикам.
+//! Broker → hub bridge: the broker delivers incoming Replies (including from other nodes) to local subscribers.
 
 use crate::hub::Hub;
 use socket_broker::{ControlCommand, Delivery};

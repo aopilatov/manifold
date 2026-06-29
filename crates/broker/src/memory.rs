@@ -1,5 +1,5 @@
-//! In-memory брокер (одна нода). Хранит offset/epoch/историю/presence в памяти, fan-out —
-//! сразу через [`Delivery`].
+//! In-memory broker (single node). Keeps offset/epoch/history/presence in memory, fan-out —
+//! immediately via [`Delivery`].
 
 use crate::{new_epoch, pub_push, Broker, ControlCommand, Delivery, Recovered, Result};
 use async_trait::async_trait;
@@ -126,7 +126,7 @@ impl Broker for MemoryBroker {
     }
 
     async fn control_publish(&self, cmd: &ControlCommand) -> Result<()> {
-        // одна нода — выполняем сразу
+        // single node — execute immediately
         self.delivery.control(cmd.clone());
         Ok(())
     }

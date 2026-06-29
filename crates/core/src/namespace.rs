@@ -1,4 +1,4 @@
-//! Проверка доступа: namespace задаёт «ворота» (нужен ли токен), JWT — право юзеру.
+//! Access checks: the namespace sets the "gate" (whether a token is needed), the JWT grants the user the right.
 
 use crate::auth::Claims;
 use crate::config::{AccessMode, Config};
@@ -12,7 +12,7 @@ pub enum Action {
 }
 
 impl Action {
-    /// Имя права в JWT.allow.
+    /// The permission name in JWT.allow.
     pub fn allow_key(self) -> &'static str {
         match self {
             Action::Subscribe => "sub",
@@ -29,7 +29,7 @@ pub enum Decision {
     Deny(&'static str),
 }
 
-/// Цепочка проверки действия на канале (см. design-doc, раздел 5).
+/// Chain of checks for an action on a channel (see design doc, section 5).
 pub fn check(cfg: &Config, claims: Option<&Claims>, channel: &str, action: Action) -> Decision {
     let ns_name = channel.split(':').next().unwrap_or("");
     if cfg.strict_namespaces && !cfg.namespaces.contains_key(ns_name) {

@@ -1,5 +1,5 @@
-// E2E: SDK ↔ реальный Rust-сервер по WebSocket.
-// Запускается при поднятом socket-server (smoke-конфиг, порт 18000, secret dev-secret).
+// E2E: SDK ↔ real Rust server over WebSocket.
+// Runs against a live socket-server (smoke config, port 18000, secret dev-secret).
 import crypto from "node:crypto";
 import { SocketClient } from "../dist/index.js";
 
@@ -54,7 +54,7 @@ const msg = await Promise.race([
 console.log("received:", msg);
 if (msg !== "hello-e2e") fail("payload mismatch");
 
-// presence должен содержать нас
+// presence should contain us
 const presence = await sub.presence().catch((e) => fail("presence: " + e.message));
 console.log("presence keys:", Object.keys(presence));
 

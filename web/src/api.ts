@@ -1,5 +1,5 @@
-// Клиент admin-API. credentials:include — сессия в httpOnly-cookie.
-// В dev Vite проксирует /admin → :8003; в prod статику раздаёт сам admin-сервер (один origin).
+// Admin API client. credentials:include — session stored in an httpOnly cookie.
+// In dev, Vite proxies /admin → :8003; in prod the admin server serves the static assets itself (same origin).
 
 async function j<T = any>(path: string, opts?: RequestInit): Promise<T> {
   const r = await fetch(path, {

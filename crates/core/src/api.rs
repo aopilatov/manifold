@@ -1,5 +1,5 @@
-//! Единый оркестратор клиентских команд. Состояние каналов — в брокере (одна нода: Memory,
-//! мультинода: Redis). Hub — только локальная маршрутизация.
+//! Single orchestrator for client commands. Channel state lives in the broker (single node: Memory,
+//! multi-node: Redis). The hub only does local routing.
 
 use socket_broker::{Broker, BrokerError, ControlCommand};
 use socket_protocol::{
@@ -24,7 +24,7 @@ const RECOVER_LIMIT: usize = 100;
 const PRESENCE_TTL_SECS: u64 = 60;
 const IDEMPOTENCY_TTL_SECS: u64 = 300;
 
-/// Сводка по ноде для Server API `info`.
+/// Node summary for the Server API `info`.
 pub struct NodeStats {
     pub node: String,
     pub num_connections: usize,
@@ -56,7 +56,7 @@ impl ApiService {
         }
     }
 
-    /// Подключить sink событий жизненного цикла (по умолчанию — Noop).
+    /// Attach a lifecycle event sink (defaults to Noop).
     pub fn set_event_sink(&mut self, sink: Arc<dyn EventSink>) {
         self.events = sink;
     }
@@ -71,7 +71,7 @@ impl ApiService {
         });
     }
 
-    /// Удобный конструктор для одной ноды (MemoryBroker).
+    /// Convenience constructor for a single node (MemoryBroker).
     pub fn in_memory(cfg: Arc<Config>) -> Self {
         let hub = Hub::new();
         let delivery = crate::delivery::HubDelivery::new(hub.clone());
@@ -261,9 +261,9 @@ impl ApiService {
         }
     }
 
-    // ─────────── Server API (доверенный; авторизация — на уровне HTTP/gRPC) ───────────
+    // ─────────── Server API (trusted; authorization handled at the HTTP/gRPC layer) ───────────
 
-    /// Публикация из бэкенда. Идемпотентна при наличии ключа.
+    /// Publish from the backend. Idempotent when a key is provided.
     pub async fn api_publish(
         &self,
         channel: &str,
@@ -284,7 +284,7 @@ impl ApiService {
         Ok(pos)
     }
 
-    /// Одно сообщение в несколько каналов.
+    /// A single message to several channels.
     pub async fn api_broadcast(&self, channels: &[String], data: Vec<u8>) -> BTreeMap<String, u64> {
         let mut out = BTreeMap::new();
         for ch in channels {
@@ -304,7 +304,7 @@ impl ApiService {
         Ok((r.publications, r.position))
     }
 
-    /// Активные каналы этой ноды (опц. glob-фильтр).
+    /// Active channels on this node (optional glob filter).
     pub fn api_channels(&self, pattern: Option<&str>) -> Vec<String> {
         let all = self.hub.channels_list();
         match pattern {
@@ -321,7 +321,7 @@ impl ApiService {
         }
     }
 
-    /// Принудительный дисконнект (по кластеру через control-канал).
+    /// Forced disconnect (cluster-wide via the control channel).
     pub async fn api_disconnect(&self, user: &str, client: &str, code: u32, reason: &str) {
         let _ = self
             .broker
@@ -344,7 +344,7 @@ impl ApiService {
             .await;
     }
 
-    /// Онлайн ли юзер (локально на этой ноде). Кластерная агрегация — TODO (реестр нод).
+    /// Whether the user is online (locally on this node). Cluster-wide aggregation is TODO (node registry).
     pub fn api_user_online(&self, user: &str) -> (bool, usize) {
         let n = self.hub.user_connection_count(user);
         (n > 0, n)

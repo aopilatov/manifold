@@ -1,4 +1,4 @@
-// E2E gRPC Server API: gRPC Publish → WS-подписчик получает сообщение.
+// E2E gRPC Server API: gRPC Publish → WS subscriber receives the message.
 import crypto from "node:crypto";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -31,13 +31,13 @@ const token = mintJwt(
   SECRET,
 );
 
-// gRPC клиент
+// gRPC client
 const def = protoLoader.loadSync(PROTO, { keepCase: true, longs: String, defaults: true });
 const pkg = grpc.loadPackageDefinition(def);
 const Svc = pkg.socket.v1.ServerApi;
 const grpcClient = new Svc(GRPC_ADDR, grpc.credentials.createInsecure());
 
-// WS подписчик
+// WS subscriber
 const client = new SocketClient({ url: WS_URL, getToken: async () => token });
 await client.connect().catch((e) => fail("ws connect: " + e.message));
 const sub = client.newSubscription("chat:room:1");

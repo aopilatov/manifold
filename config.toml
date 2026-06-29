@@ -1,10 +1,10 @@
-# Конфиг движка. Секреты — через ${ENV_VAR} (раскрываются при загрузке).
-# Полное описание полей — docs/architecture.md.
+# Engine config. Secrets — via ${ENV_VAR} (expanded at load time).
+# Full field reference — docs/architecture.md.
 
-strict_namespaces = true          # канал без известного namespace → отказ
+strict_namespaces = true          # channel with an unknown namespace → reject
 
 # ──────────────────────────────────────────────
-#  Сервер и транспорты
+#  Server and transports
 # ──────────────────────────────────────────────
 [server]
 node_name = "socket-1"
@@ -16,7 +16,7 @@ path             = "/connection/websocket"
 max_message_size = "65536"
 ping_interval    = "25s"
 
-[server.sse]                       # SSE-фолбэк (делит HTTP-сервер)
+[server.sse]                       # SSE fallback (shares the HTTP server)
 enabled   = true
 path      = "/connection/sse"
 emit_path = "/connection/sse/emit"
@@ -57,16 +57,16 @@ cert_path = "/etc/socket/tls/cert.pem"
 key_path  = "/etc/socket/tls/key.pem"
 
 # ──────────────────────────────────────────────
-#  Брокер
+#  Broker
 # ──────────────────────────────────────────────
 [redis]
-enabled         = false          # true → мультинода (RedisBroker); false → одна нода (память)
+enabled         = false          # true → multi-node (RedisBroker); false → single node (in-memory)
 url             = "redis://127.0.0.1:6379"
 prefix          = "socket"
 idempotency_ttl = "5m"
 
 # ──────────────────────────────────────────────
-#  Проверка клиентских JWT (выдаёт внешний бэкенд)
+#  Client JWT verification (issued by an external backend)
 # ──────────────────────────────────────────────
 [auth.jwt]
 algorithm      = "HS256"
@@ -75,7 +75,7 @@ audience       = "socket"
 channels_claim = "channels"
 
 # ──────────────────────────────────────────────
-#  Ключи Server API (server-to-server)
+#  Server API keys (server-to-server)
 # ──────────────────────────────────────────────
 [[api_keys]]
 key   = "${API_KEY_BACKEND}"
@@ -87,7 +87,7 @@ key   = "${API_KEY_PUBLISHER}"
 allow = ["publish","broadcast"]
 
 # ──────────────────────────────────────────────
-#  Дефолты и namespaces
+#  Defaults and namespaces
 # ──────────────────────────────────────────────
 [defaults]
 presence        = false
@@ -140,13 +140,13 @@ presence  = "off"
 history   = "token"
 
 # ──────────────────────────────────────────────
-#  Операционка
+#  Operations
 # ──────────────────────────────────────────────
 [shutdown]
 drain_timeout    = "30s"
 reconnect_advice = true
 
-[events]                           # опц. уведомления бэкенда о жизненном цикле
+[events]                           # opt. backend notifications about lifecycle
 enabled   = false
 endpoint  = "https://app.example.com/socket/events"
 types     = ["connected", "disconnected", "subscribed", "unsubscribed"]

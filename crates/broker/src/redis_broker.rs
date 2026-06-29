@@ -1,10 +1,10 @@
-//! Redis-брокер (мультинода).
+//! Redis broker (multi-node).
 //!
-//! - **publish**: Lua-скрипт атомарно `INCR seq` + `XADD hist` (id = `offset-0`), затем `PUBLISH`
-//!   сериализованного Push на `ch:{channel}`.
-//! - **fan-out**: фоновая задача держит pub/sub-соединение с `PSUBSCRIBE {prefix}:ch:*` и отдаёт
-//!   пришедшее (в т.ч. с других нод) локальным подписчикам через [`Delivery`].
-//!   _Замечание:_ PSUBSCRIBE-all проще ленивой per-channel подписки; ленивость — оптимизация (TODO).
+//! - **publish**: a Lua script atomically does `INCR seq` + `XADD hist` (id = `offset-0`), then `PUBLISH`es
+//!   the serialized Push to `ch:{channel}`.
+//! - **fan-out**: a background task holds a pub/sub connection with `PSUBSCRIBE {prefix}:ch:*` and delivers
+//!   incoming messages (including from other nodes) to local subscribers via [`Delivery`].
+//!   _Note:_ PSUBSCRIBE-all is simpler than lazy per-channel subscription; laziness is an optimization (TODO).
 //! - **presence**: ZSET `pz:{ch}` (score = expire_at) + HASH `ph:{ch}` (client → ClientInfo).
 
 use crate::{new_epoch, pub_push, unix_secs, Broker, BrokerError, ControlCommand, Delivery, Recovered, Result};
@@ -33,7 +33,7 @@ pub struct RedisBroker {
 }
 
 impl RedisBroker {
-    /// Подключиться и запустить фоновую pub/sub-задачу (fan-out на эту ноду).
+    /// Connect and start the background pub/sub task (fan-out onto this node).
     pub async fn connect(url: &str, prefix: impl Into<String>, delivery: Arc<dyn Delivery>) -> Result<Arc<Self>> {
         let prefix = prefix.into();
         let client = redis::Client::open(url)?;
@@ -61,7 +61,7 @@ impl RedisBroker {
                     }
                 }
             }
-            tracing::warn!("redis pub/sub поток завершился");
+            tracing::warn!("redis pub/sub stream ended");
         });
 
         Ok(Arc::new(Self { conn, prefix, publish_script: Script::new(PUBLISH_LUA) }))
@@ -79,7 +79,7 @@ impl RedisBroker {
             Some(e) => Ok(e),
             None => {
                 let e = new_epoch();
-                // SET NX: первый победитель фиксирует epoch
+                // SET NX: the first winner fixes the epoch
                 let ok: bool = redis::cmd("SET").arg(&epochk).arg(&e).arg("NX").query_async(&mut c).await?;
                 if ok {
                     Ok(e)
@@ -157,7 +157,7 @@ impl Broker for RedisBroker {
         }
 
         let mut c = self.conn.clone();
-        let start = format!("({}-0", since.offset); // строго больше since.offset
+        let start = format!("({}-0", since.offset); // strictly greater than since.offset
         let reply: StreamRangeReply = redis::cmd("XRANGE")
             .arg(self.key("hist", channel))
             .arg(&start)
@@ -208,7 +208,7 @@ impl Broker for RedisBroker {
         let mut c = self.conn.clone();
         let (pz, ph) = (self.key("pz", channel), self.key("ph", channel));
         let now = unix_secs() as f64;
-        // очистка протухших
+        // clean up expired entries
         let _: () = c.zrembyscore(&pz, "-inf", now).await?;
         let live: Vec<String> = c.zrangebyscore(&pz, now, "+inf").await?;
         if live.is_empty() {

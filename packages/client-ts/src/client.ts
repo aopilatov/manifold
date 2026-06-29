@@ -1,6 +1,6 @@
-// SocketClient — клиентский SDK. Транспорт-агностичен (WS/SSE), корреляция Command↔Reply по id,
-// реестр подписок (источник истины), реконнект с джиттером, восстановление подписок, recovery,
-// refresh токена (вариант B), ping.
+// SocketClient — client SDK. Transport-agnostic (WS/SSE), correlates Command↔Reply by id,
+// subscription registry (source of truth), reconnect with jitter, subscription restoration, recovery,
+// token refresh (variant B), ping.
 
 import { create } from "@bufbuild/protobuf";
 import {
@@ -21,7 +21,7 @@ export interface SocketOptions {
   url: string;
   getToken: () => Promise<string>;
   getSubToken?: (channel: string) => Promise<string>;
-  /** Транспорт: ws (дефолт) | sse (фолбэк). */
+  /** Transport: ws (default) | sse (fallback). */
   transport?: "ws" | "sse";
   requestTimeout?: number;
 }
@@ -134,11 +134,11 @@ export class SocketClient extends Emitter {
 
     let res: ConnectResult;
     if (established) {
-      // SSE: коннект выполнил GET; подписки восстанавливаем индивидуально
+      // SSE: connect performed a GET; restore subscriptions individually
       res = established;
       for (const sub of this.subs.values()) this.resubscribe(sub);
     } else {
-      // WS: шлём Connect-команду с батч-восстановлением подписок (1 RTT)
+      // WS: send a Connect command with batch subscription restoration (1 RTT)
       const subsInit: Record<string, any> = {};
       for (const [ch, sub] of this.subs) {
         subsInit[ch] = { channel: ch, recover: !!sub.position, position: sub.position, token: sub.subToken ?? "" };
@@ -218,7 +218,7 @@ export class SocketClient extends Emitter {
       case "disconnect":
         this.transport?.close();
         break;
-      // неизвестные варианты безопасно игнорируются (версионирование)
+      // unknown variants are safely ignored (versioning)
     }
   }
 

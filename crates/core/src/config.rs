@@ -1,5 +1,5 @@
-//! Загрузка и модель `config.toml`. `defaults` и каждый `namespaces.<имя>` — один тип
-//! [`NamespaceConfig`]; незаданные поля namespace наследуются из `defaults`.
+//! Loading and the model for `config.toml`. `defaults` and each `namespaces.<name>` share the
+//! same type [`NamespaceConfig`]; unset namespace fields are inherited from `defaults`.
 
 use serde::Deserialize;
 use std::collections::HashMap;
@@ -138,7 +138,7 @@ pub struct Redis {
     pub prefix: String,
     #[serde(default)]
     pub idempotency_ttl: Option<String>,
-    /// true → мультинода через RedisBroker; false → одна нода (MemoryBroker).
+    /// true → multi-node via RedisBroker; false → single node (MemoryBroker).
     #[serde(default)]
     pub enabled: bool,
 }
@@ -168,7 +168,7 @@ pub struct ApiKey {
     pub allow: Vec<String>,
 }
 
-/// Политика на namespace (а также `defaults`).
+/// Per-namespace policy (also used for `defaults`).
 #[derive(Debug, Clone, Default, Deserialize)]
 pub struct NamespaceConfig {
     #[serde(default)]
@@ -298,15 +298,15 @@ pub enum ConfigError {
 }
 
 impl Config {
-    /// Загрузить из файла с раскрытием `${ENV_VAR}`.
+    /// Load from a file, expanding `${ENV_VAR}`.
     pub fn load(path: &str) -> Result<Self, ConfigError> {
         let raw = std::fs::read_to_string(path)?;
         let expanded = expand_env(&raw);
         Ok(toml::from_str(&expanded)?)
     }
 
-    /// Эффективный namespace: значения namespace поверх `defaults`.
-    /// TODO(impl): полноценный merge незаданных полей из defaults.
+    /// Effective namespace: namespace values layered over `defaults`.
+    /// TODO(impl): full merge of unset fields from defaults.
     pub fn namespace(&self, channel: &str) -> &NamespaceConfig {
         let ns = channel.split(':').next().unwrap_or("");
         self.namespaces.get(ns).unwrap_or(&self.defaults)
@@ -319,9 +319,9 @@ mod tests {
 
     #[test]
     fn parses_repo_config() {
-        // config.toml в корне репо ↔ структуры serde не разошлись.
+        // config.toml at the repo root ↔ serde structs haven't drifted.
         let cfg = Config::load(concat!(env!("CARGO_MANIFEST_DIR"), "/../../config.toml"))
-            .expect("config.toml должен парситься");
+            .expect("config.toml should parse");
         assert_eq!(cfg.server.node_name, "socket-1");
         assert!(cfg.namespaces.contains_key("chat"));
         assert_eq!(cfg.namespace("news:sports").history_size, 100);
@@ -329,7 +329,7 @@ mod tests {
     }
 }
 
-/// Простейшая раскрутка `${VAR}` из окружения.
+/// Minimal expansion of `${VAR}` from the environment.
 fn expand_env(input: &str) -> String {
     let mut out = String::with_capacity(input.len());
     let mut chars = input.chars().peekable();

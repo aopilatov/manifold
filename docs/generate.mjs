@@ -1,8 +1,8 @@
-// Автоген справочной документации из источников истины:
-//   proto/socket.proto → protocol.md (клиентский протокол) + server-api.md (gRPC ServerApi)
+// Auto-generates reference documentation from the sources of truth:
+//   proto/socket.proto → protocol.md (client protocol) + server-api.md (gRPC ServerApi)
 //   config.toml        → config-reference.md
 //
-// Запуск: node docs/generate.mjs  (из корня репо)
+// Run: node docs/generate.mjs  (from the repo root)
 
 import fs from "node:fs";
 import path from "node:path";
@@ -15,7 +15,7 @@ const CONFIG = path.join(root, "config.toml");
 const OUT = path.join(root, "docs");
 
 const fm = (title, desc) => `---\ntitle: ${title}\ndescription: ${desc}\n---\n\n`;
-const note = "> Сгенерировано автоматически из источников истины. Не редактировать вручную.\n\n";
+const note = "> Generated automatically from the sources of truth. Do not edit manually.\n\n";
 
 function fieldType(f) {
   if (f.map) return `map<${f.keyType}, ${f.type}>`;
@@ -23,8 +23,8 @@ function fieldType(f) {
 }
 
 function messageTable(type) {
-  if (!type.fieldsArray.length) return "_(пустое сообщение)_\n";
-  let out = "| Поле | Тип | № | oneof |\n|---|---|---|---|\n";
+  if (!type.fieldsArray.length) return "_(empty message)_\n";
+  let out = "| Field | Type | # | oneof |\n|---|---|---|---|\n";
   for (const f of type.fieldsArray) {
     const oneof = f.partOf ? `\`${f.partOf.name}\`` : "";
     out += `| \`${f.name}\` | \`${fieldType(f)}\` | ${f.id} | ${oneof} |\n`;
@@ -44,9 +44,9 @@ function isApi(name) {
 
 function generateProtocol(ns) {
   const messages = ns.nestedArray.filter((n) => n instanceof protobuf.Type && !isApi(n.name));
-  let md = fm("Протокол", "Клиентский WebSocket/SSE-протокол (Protobuf)") + note;
-  md += "Бинарный protobuf. Пакет `socket.v1`. Клиент шлёт `Command`, сервер отвечает `Reply` " +
-    "(тот же `id`) либо асинхронным `Push` (`id = 0`).\n\n";
+  let md = fm("Protocol", "Client WebSocket/SSE protocol (Protobuf)") + note;
+  md += "Binary protobuf. Package `socket.v1`. The client sends a `Command`, the server replies with a `Reply` " +
+    "(same `id`) or an asynchronous `Push` (`id = 0`).\n\n";
   for (const t of messages) {
     md += `## ${t.name}\n\n${messageTable(t)}`;
   }
@@ -57,20 +57,20 @@ function generateServerApi(ns) {
   const svc = ns.nestedArray.find((n) => n instanceof protobuf.Service);
   const apiMsgs = ns.nestedArray.filter((n) => n instanceof protobuf.Type && isApi(n.name));
 
-  let md = fm("Server API", "Серверный API (HTTP + gRPC) для публикации из бэкенда") + note;
-  md += "Доверенная server-to-server сторона. gRPC-сервис ниже; HTTP/JSON — те же методы на " +
+  let md = fm("Server API", "Server-side API (HTTP + gRPC) for publishing from the backend") + note;
+  md += "Trusted server-to-server side. The gRPC service is below; HTTP/JSON exposes the same methods at " +
     "`POST /api/<method>`. Auth — `Authorization: apikey <key>`.\n\n";
 
   if (svc) {
-    md += `## Сервис \`${svc.name}\`\n\n`;
-    md += "| Метод | Запрос | Ответ | Стрим |\n|---|---|---|---|\n";
+    md += `## Service \`${svc.name}\`\n\n`;
+    md += "| Method | Request | Response | Stream |\n|---|---|---|---|\n";
     for (const m of svc.methodsArray) {
       const stream = `${m.requestStream ? "↑" : ""}${m.responseStream ? "↓" : ""}` || "—";
       md += `| \`${m.name}\` | \`${m.requestType}\` | \`${m.responseType}\` | ${stream} |\n`;
     }
     md += "\n";
   }
-  md += "## Сообщения\n\n";
+  md += "## Messages\n\n";
   for (const t of apiMsgs) {
     md += `### ${t.name}\n\n${messageTable(t)}`;
   }
@@ -79,8 +79,8 @@ function generateServerApi(ns) {
 
 function generateConfig() {
   const lines = fs.readFileSync(CONFIG, "utf8").split("\n");
-  let md = fm("Справочник конфига", "Все ключи config.toml") + note;
-  md += "Источник — `config.toml`. Секреты задаются через `${ENV_VAR}`.\n\n";
+  let md = fm("Config reference", "All config.toml keys") + note;
+  md += "Source — `config.toml`. Secrets are set via `${ENV_VAR}`.\n\n";
   let openTable = false;
   const closeTable = () => {
     if (openTable) md += "\n";
@@ -90,7 +90,7 @@ function generateConfig() {
   for (const raw of lines) {
     const line = raw.trim();
     if (!line || line.startsWith("# ─") || line.startsWith("#  ")) continue;
-    // секция
+    // section
     const sec = line.match(/^\[+([^\]]+)\]+/);
     if (sec) {
       closeTable();
@@ -101,7 +101,7 @@ function generateConfig() {
     const kv = line.match(/^([A-Za-z0-9_]+)\s*=\s*(.+?)(?:\s+#\s*(.*))?$/);
     if (kv) {
       if (!openTable) {
-        md += "| Ключ | Пример | Описание |\n|---|---|---|\n";
+        md += "| Key | Example | Description |\n|---|---|---|\n";
         openTable = true;
       }
       const [, key, value, comment] = kv;

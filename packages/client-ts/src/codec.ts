@@ -1,4 +1,4 @@
-// Кодек протокола: Command ⇄ bytes, bytes → Reply (protobuf-es).
+// Protocol codec: Command ⇄ bytes, bytes → Reply (protobuf-es).
 import { toBinary, fromBinary } from "@bufbuild/protobuf";
 import {
   CommandSchema,

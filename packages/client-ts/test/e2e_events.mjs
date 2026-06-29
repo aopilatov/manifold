@@ -1,4 +1,4 @@
-// E2E события жизненного цикла + метрики.
+// E2E lifecycle events + metrics.
 import http from "node:http";
 import crypto from "node:crypto";
 import { SocketClient } from "../dist/index.js";
@@ -12,7 +12,7 @@ const fail = (m) => {
   process.exit(1);
 };
 
-// приёмник вебхуков
+// webhook receiver
 const received = [];
 const receiver = http.createServer((req, res) => {
   let body = "";
@@ -47,19 +47,19 @@ await sub.subscribe().catch((e) => fail("subscribe: " + e.message));
 await sub.unsubscribe().catch((e) => fail("unsubscribe: " + e.message));
 client.disconnect();
 
-await new Promise((r) => setTimeout(r, 1000)); // дать вебхукам долететь
+await new Promise((r) => setTimeout(r, 1000)); // let webhooks arrive
 
 const kinds = received.map((e) => e.type);
-console.log("получены события:", kinds);
+console.log("received events:", kinds);
 for (const k of ["connected", "subscribed", "unsubscribed", "disconnected"]) {
-  if (!kinds.includes(k)) fail("нет события: " + k);
+  if (!kinds.includes(k)) fail("missing event: " + k);
 }
 
 const metrics = await fetch(METRICS).then((r) => r.text());
 const lines = metrics.split("\n").filter((l) => l.startsWith("socket_") && !l.startsWith("#"));
-console.log("метрики:\n" + lines.join("\n"));
-if (!metrics.includes("socket_subscriptions_total")) fail("нет метрики subscriptions");
-if (!metrics.includes("socket_connections_opened_total")) fail("нет метрики connections_opened");
+console.log("metrics:\n" + lines.join("\n"));
+if (!metrics.includes("socket_subscriptions_total")) fail("missing subscriptions metric");
+if (!metrics.includes("socket_connections_opened_total")) fail("missing connections_opened metric");
 
 receiver.close();
 console.log("E2E EVENTS OK");

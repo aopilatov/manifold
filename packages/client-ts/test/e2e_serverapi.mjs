@@ -1,4 +1,4 @@
-// E2E Server API: HTTP publish на node-1 → подписчик на node-2; затем HTTP disconnect по кластеру.
+// E2E Server API: HTTP publish on node-1 → subscriber on node-2; then HTTP disconnect across the cluster.
 import crypto from "node:crypto";
 import { SocketClient } from "../dist/index.js";
 
@@ -29,7 +29,7 @@ const apiPost = (path, body) =>
     body: JSON.stringify(body),
   });
 
-// Подписчик на НОДЕ 2
+// Subscriber on NODE 2
 const clientB = new SocketClient({ url: NODE2_WS, getToken: async () => token });
 clientB.disconnect = clientB.disconnect.bind(clientB);
 await clientB.connect().catch((e) => fail("B connect: " + e.message));
@@ -39,7 +39,7 @@ const gotDisc = new Promise((res) => clientB.on("disconnected", () => res(true))
 await subB.subscribe().catch((e) => fail("B subscribe: " + e.message));
 console.log("subscriber up on node-2");
 
-// 1) HTTP publish через НОДУ 1
+// 1) HTTP publish via NODE 1
 const data = Buffer.from("server-pub").toString("base64");
 const pr = await apiPost("publish", { channel: "chat:room:1", data });
 if (pr.status !== 200) fail("publish status " + pr.status);
@@ -51,13 +51,13 @@ const msg = await Promise.race([gotPub, new Promise((_, r) => setTimeout(() => r
 console.log("node-2 received:", msg);
 if (msg !== "server-pub") fail("payload mismatch");
 
-// 2) presence через HTTP должен видеть подписчика (общий Redis)
+// 2) presence over HTTP should see the subscriber (shared Redis)
 const presR = await apiPost("presence", { channel: "chat:room:1" });
 const pres = await presR.json();
 console.log("presence:", Object.keys(pres.presence ?? {}).length, "client(s)");
 
-// 3) HTTP disconnect по user → кластерный control → node-2 рвёт clientB
-clientB.disconnect = () => {}; // не даём SDK переподключиться молча — следим за событием
+// 3) HTTP disconnect by user → cluster control → node-2 drops clientB
+clientB.disconnect = () => {}; // don't let the SDK silently reconnect — watch for the event
 const dr = await apiPost("disconnect", { user: "u-x", reason: "by-admin" });
 if (dr.status !== 202) fail("disconnect status " + dr.status);
 console.log("HTTP disconnect sent");

@@ -1,10 +1,10 @@
-//! SSE-транспорт (этап 4) — фолбэк для сетей, режущих WS. Расщеплённая сессия:
+//! SSE transport (stage 4) — a fallback for networks that block WS. Split session:
 //!
-//! - `GET /connection/sse?token=JWT` — downstream (EventSource): сервер аутентифицирует, заводит
-//!   сессию в том же hub и стримит `Reply` как **base64(protobuf)** в поле `data:`. Первое событие —
-//!   `ConnectResult` (несёт `client` = session_id).
-//! - `POST /connection/sse/emit` (заголовок `X-Session-Id`, тело — protobuf `Command`) — upstream.
-//!   Ответ уходит вниз по SSE той же сессии.
+//! - `GET /connection/sse?token=JWT` — downstream (EventSource): the server authenticates, sets up
+//!   a session in the same hub and streams `Reply` as **base64(protobuf)** in the `data:` field. The
+//!   first event is `ConnectResult` (carries `client` = session_id).
+//! - `POST /connection/sse/emit` (`X-Session-Id` header, body — protobuf `Command`) — upstream.
+//!   The response goes back down the SSE of the same session.
 
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -26,7 +26,7 @@ use tokio_stream::StreamExt;
 
 const B64: base64::engine::GeneralPurpose = base64::engine::general_purpose::STANDARD;
 
-/// Снимает сессию при разрыве downstream (EventSource закрылся).
+/// Tears down the session when the downstream breaks (EventSource closed).
 struct CleanupGuard {
     api: Arc<ApiService>,
     sid: String,
@@ -56,7 +56,7 @@ pub async fn stream(
     let guard = CleanupGuard { api: api.clone(), sid: sid.clone() };
 
     let body = async_stream::stream! {
-        let _g = guard; // живёт пока жив стрим; Drop → cleanup сессии
+        let _g = guard; // lives as long as the stream; Drop → session cleanup
         yield Ok::<Event, std::convert::Infallible>(sse_event(&initial));
         let mut rs = ReceiverStream::new(rx);
         while let Some(reply) = rs.next().await {
@@ -77,7 +77,7 @@ pub async fn emit(State(api): State<Arc<ApiService>>, headers: HeaderMap, body: 
         Err(_) => return StatusCode::BAD_REQUEST,
     };
     if let Some(reply) = api.handle_command(&sid, cmd).await {
-        // tx клонируем и роняем guard DashMap до await
+        // clone tx and drop the DashMap guard before the await
         let tx = api.hub.connections.get(&sid).map(|c| c.tx.clone());
         if let Some(tx) = tx {
             let _ = tx.send(reply).await;

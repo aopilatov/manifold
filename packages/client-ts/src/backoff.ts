@@ -1,8 +1,8 @@
-// Реконнект-backoff с полным джиттером (раздел 7.11): размазывает синхронные реконнекты.
+// Reconnect backoff with full jitter (section 7.11): spreads out synchronized reconnects.
 
 export interface BackoffOptions {
-  base?: number; // мс, стартовая задержка
-  max?: number; // мс, потолок
+  base?: number; // ms, initial delay
+  max?: number; // ms, cap
 }
 
 export function jitteredDelay(attempt: number, opts: BackoffOptions = {}): number {

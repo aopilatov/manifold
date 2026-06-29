@@ -1,6 +1,6 @@
-//! Server API — HTTP/JSON адаптер (этап 5). Тонкая обёртка над `ApiService::api_*`.
-//! Auth — API-ключ: `Authorization: apikey <key>` + проверка `allow` метода.
-//! `data` в JSON — base64.
+//! Server API — HTTP/JSON adapter (stage 5). A thin wrapper over `ApiService::api_*`.
+//! Auth — API key: `Authorization: apikey <key>` + method `allow` check.
+//! `data` in JSON is base64.
 
 use std::collections::BTreeMap;
 use std::sync::Arc;
@@ -34,7 +34,7 @@ pub fn router(api: Api) -> Router {
         .with_state(api)
 }
 
-/// Проверка API-ключа и права на метод.
+/// Validate the API key and the permission for the method.
 fn authorized(headers: &HeaderMap, method: &str, api: &ApiService) -> bool {
     let key = headers
         .get("authorization")

@@ -1,4 +1,4 @@
-// E2E мультинода: подписчик на ноде 2 получает публикацию, сделанную через ноду 1 (общий Redis).
+// E2E multinode: a subscriber on node 2 receives a publication made via node 1 (shared Redis).
 import crypto from "node:crypto";
 import { SocketClient } from "../dist/index.js";
 
@@ -22,7 +22,7 @@ const fail = (m) => {
   process.exit(1);
 };
 
-// Подписчик на НОДЕ 2
+// Subscriber on NODE 2
 const clientB = new SocketClient({ url: NODE2, getToken: async () => token });
 await clientB.connect().catch((e) => fail("B connect: " + e.message));
 const subB = clientB.newSubscription("chat:room:1");
@@ -32,7 +32,7 @@ const received = new Promise((res) =>
 await subB.subscribe().catch((e) => fail("B subscribe: " + e.message));
 console.log("subscriber up on node-2");
 
-// Публикатор на НОДЕ 1 (без подписки)
+// Publisher on NODE 1 (no subscription)
 const clientA = new SocketClient({ url: NODE1, getToken: async () => token });
 await clientA.connect().catch((e) => fail("A connect: " + e.message));
 const subA = clientA.newSubscription("chat:room:1");

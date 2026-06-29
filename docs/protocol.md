@@ -1,15 +1,15 @@
 ---
-title: Протокол
-description: Клиентский WebSocket/SSE-протокол (Protobuf)
+title: Protocol
+description: Client WebSocket/SSE protocol (Protobuf)
 ---
 
-> Сгенерировано автоматически из источников истины. Не редактировать вручную.
+> Generated automatically from the sources of truth. Do not edit manually.
 
-Бинарный protobuf. Пакет `socket.v1`. Клиент шлёт `Command`, сервер отвечает `Reply` (тот же `id`) либо асинхронным `Push` (`id = 0`).
+Binary protobuf. Package `socket.v1`. The client sends a `Command`, the server replies with a `Reply` (same `id`) or an asynchronous `Push` (`id = 0`).
 
 ## Command
 
-| Поле | Тип | № | oneof |
+| Field | Type | # | oneof |
 |---|---|---|---|
 | `id` | `uint32` | 1 |  |
 | `connect` | `ConnectRequest` | 2 | `method` |
@@ -24,7 +24,7 @@ description: Клиентский WebSocket/SSE-протокол (Protobuf)
 
 ## Reply
 
-| Поле | Тип | № | oneof |
+| Field | Type | # | oneof |
 |---|---|---|---|
 | `id` | `uint32` | 1 |  |
 | `error` | `Error` | 2 |  |
@@ -39,7 +39,7 @@ description: Клиентский WebSocket/SSE-протокол (Protobuf)
 
 ## Error
 
-| Поле | Тип | № | oneof |
+| Field | Type | # | oneof |
 |---|---|---|---|
 | `code` | `uint32` | 1 |  |
 | `message` | `string` | 2 |  |
@@ -47,7 +47,7 @@ description: Клиентский WebSocket/SSE-протокол (Protobuf)
 
 ## ConnectRequest
 
-| Поле | Тип | № | oneof |
+| Field | Type | # | oneof |
 |---|---|---|---|
 | `token` | `string` | 1 |  |
 | `subs` | `map<string, SubscribeRequest>` | 2 |  |
@@ -57,7 +57,7 @@ description: Клиентский WebSocket/SSE-протокол (Protobuf)
 
 ## SubscribeRequest
 
-| Поле | Тип | № | oneof |
+| Field | Type | # | oneof |
 |---|---|---|---|
 | `channel` | `string` | 1 |  |
 | `token` | `string` | 2 |  |
@@ -66,13 +66,13 @@ description: Клиентский WebSocket/SSE-протокол (Protobuf)
 
 ## UnsubscribeRequest
 
-| Поле | Тип | № | oneof |
+| Field | Type | # | oneof |
 |---|---|---|---|
 | `channel` | `string` | 1 |  |
 
 ## PublishRequest
 
-| Поле | Тип | № | oneof |
+| Field | Type | # | oneof |
 |---|---|---|---|
 | `channel` | `string` | 1 |  |
 | `data` | `bytes` | 2 |  |
@@ -80,13 +80,13 @@ description: Клиентский WebSocket/SSE-протокол (Protobuf)
 
 ## PresenceRequest
 
-| Поле | Тип | № | oneof |
+| Field | Type | # | oneof |
 |---|---|---|---|
 | `channel` | `string` | 1 |  |
 
 ## HistoryRequest
 
-| Поле | Тип | № | oneof |
+| Field | Type | # | oneof |
 |---|---|---|---|
 | `channel` | `string` | 1 |  |
 | `limit` | `int32` | 2 |  |
@@ -95,23 +95,23 @@ description: Клиентский WebSocket/SSE-протокол (Protobuf)
 
 ## RefreshRequest
 
-| Поле | Тип | № | oneof |
+| Field | Type | # | oneof |
 |---|---|---|---|
 | `token` | `string` | 1 |  |
 
 ## SubRefreshRequest
 
-| Поле | Тип | № | oneof |
+| Field | Type | # | oneof |
 |---|---|---|---|
 | `channel` | `string` | 1 |  |
 | `token` | `string` | 2 |  |
 
 ## PingRequest
 
-_(пустое сообщение)_
+_(empty message)_
 ## ConnectResult
 
-| Поле | Тип | № | oneof |
+| Field | Type | # | oneof |
 |---|---|---|---|
 | `client` | `string` | 1 |  |
 | `ping_interval_ms` | `uint32` | 2 |  |
@@ -122,7 +122,7 @@ _(пустое сообщение)_
 
 ## SubscribeResult
 
-| Поле | Тип | № | oneof |
+| Field | Type | # | oneof |
 |---|---|---|---|
 | `recoverable` | `bool` | 1 |  |
 | `position` | `StreamPosition` | 2 |  |
@@ -132,32 +132,32 @@ _(пустое сообщение)_
 
 ## UnsubscribeResult
 
-_(пустое сообщение)_
+_(empty message)_
 ## PublishResult
 
-| Поле | Тип | № | oneof |
+| Field | Type | # | oneof |
 |---|---|---|---|
 | `position` | `StreamPosition` | 1 |  |
 
 ## PresenceResult
 
-| Поле | Тип | № | oneof |
+| Field | Type | # | oneof |
 |---|---|---|---|
 | `presence` | `map<string, ClientInfo>` | 1 |  |
 
 ## HistoryResult
 
-| Поле | Тип | № | oneof |
+| Field | Type | # | oneof |
 |---|---|---|---|
 | `publications` | `repeated Publication` | 1 |  |
 | `position` | `StreamPosition` | 2 |  |
 
 ## PongResult
 
-_(пустое сообщение)_
+_(empty message)_
 ## Push
 
-| Поле | Тип | № | oneof |
+| Field | Type | # | oneof |
 |---|---|---|---|
 | `channel` | `string` | 1 |  |
 | `pub` | `Publication` | 2 | `event` |
@@ -168,7 +168,7 @@ _(пустое сообщение)_
 
 ## Publication
 
-| Поле | Тип | № | oneof |
+| Field | Type | # | oneof |
 |---|---|---|---|
 | `data` | `bytes` | 1 |  |
 | `offset` | `uint64` | 2 |  |
@@ -177,26 +177,26 @@ _(пустое сообщение)_
 
 ## Join
 
-| Поле | Тип | № | oneof |
+| Field | Type | # | oneof |
 |---|---|---|---|
 | `info` | `ClientInfo` | 1 |  |
 
 ## Leave
 
-| Поле | Тип | № | oneof |
+| Field | Type | # | oneof |
 |---|---|---|---|
 | `info` | `ClientInfo` | 1 |  |
 
 ## Unsubscribe
 
-| Поле | Тип | № | oneof |
+| Field | Type | # | oneof |
 |---|---|---|---|
 | `code` | `uint32` | 1 |  |
 | `reason` | `string` | 2 |  |
 
 ## Disconnect
 
-| Поле | Тип | № | oneof |
+| Field | Type | # | oneof |
 |---|---|---|---|
 | `code` | `uint32` | 1 |  |
 | `reason` | `string` | 2 |  |
@@ -204,7 +204,7 @@ _(пустое сообщение)_
 
 ## ClientInfo
 
-| Поле | Тип | № | oneof |
+| Field | Type | # | oneof |
 |---|---|---|---|
 | `user` | `string` | 1 |  |
 | `client` | `string` | 2 |  |
@@ -213,7 +213,7 @@ _(пустое сообщение)_
 
 ## StreamPosition
 
-| Поле | Тип | № | oneof |
+| Field | Type | # | oneof |
 |---|---|---|---|
 | `offset` | `uint64` | 1 |  |
 | `epoch` | `string` | 2 |  |

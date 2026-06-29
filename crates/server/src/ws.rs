@@ -1,6 +1,6 @@
-//! WebSocket-транспорт (этап 1). Handshake → JWT → writer-задача → цикл Command→Reply.
+//! WebSocket transport (stage 1). Handshake → JWT → writer task → Command→Reply loop.
 //!
-//! TODO: проверка allowed_origins (CSWSH), require_subprotocol, conn-лимиты, handshake_timeout.
+//! TODO: allowed_origins check (CSWSH), require_subprotocol, conn limits, handshake_timeout.
 
 use std::sync::Arc;
 
@@ -16,7 +16,7 @@ use socket_protocol::{command, reply, Command, Reply};
 use tokio::sync::mpsc;
 
 pub async fn handler(State(api): State<Arc<ApiService>>, ws: WebSocketUpgrade) -> Response {
-    // Согласование subprotocol: если клиент предложил socket.v1 — выбираем его (эхо в ответе).
+    // Subprotocol negotiation: if the client offered socket.v1, select it (echoed in the response).
     ws.protocols(["socket.v1"])
         .on_upgrade(move |socket| connection(api, socket))
 }
@@ -25,7 +25,7 @@ async fn connection(api: Arc<ApiService>, socket: WebSocket) {
     let (mut sink, mut stream) = socket.split();
     let (tx, mut rx) = mpsc::channel::<Reply>(256);
 
-    // writer-задача: Reply → protobuf → бинарный WS-кадр
+    // writer task: Reply → protobuf → binary WS frame
     let writer = tokio::spawn(async move {
         while let Some(reply) = rx.recv().await {
             let bytes = reply.encode_to_vec();
@@ -35,7 +35,7 @@ async fn connection(api: Arc<ApiService>, socket: WebSocket) {
         }
     });
 
-    // 1) первый кадр обязан быть ConnectRequest
+    // 1) the first frame must be a ConnectRequest
     let client_id = match handshake(&api, &mut stream, &tx).await {
         Some(id) => id,
         None => {
@@ -44,7 +44,7 @@ async fn connection(api: Arc<ApiService>, socket: WebSocket) {
         }
     };
 
-    // 2) цикл команд
+    // 2) command loop
     while let Some(Ok(msg)) = stream.next().await {
         match msg {
             Message::Binary(b) => {
@@ -65,7 +65,7 @@ async fn connection(api: Arc<ApiService>, socket: WebSocket) {
     writer.abort();
 }
 
-/// Принять и проверить ConnectRequest, зарегистрировать соединение, отдать ConnectResult.
+/// Accept and validate a ConnectRequest, register the connection, return ConnectResult.
 async fn handshake(
     api: &Arc<ApiService>,
     stream: &mut futures::stream::SplitStream<WebSocket>,
@@ -77,7 +77,7 @@ async fn handshake(
     let cmd = Command::decode(b.as_slice()).ok()?;
     let id = cmd.id;
     let Some(command::Method::Connect(creq)) = cmd.method else {
-        return None; // первый кадр — не connect
+        return None; // first frame is not a connect
     };
 
     match api.authenticate(&creq.token) {

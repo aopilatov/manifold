@@ -1,26 +1,26 @@
 ---
-title: Справочник конфига
-description: Все ключи config.toml
+title: Config reference
+description: All config.toml keys
 ---
 
-> Сгенерировано автоматически из источников истины. Не редактировать вручную.
+> Generated automatically from the sources of truth. Do not edit manually.
 
-Источник — `config.toml`. Секреты задаются через `${ENV_VAR}`.
+Source — `config.toml`. Secrets are set via `${ENV_VAR}`.
 
-| Ключ | Пример | Описание |
+| Key | Example | Description |
 |---|---|---|
-| `strict_namespaces` | `true` | канал без известного namespace → отказ |
+| `strict_namespaces` | `true` | channel with an unknown namespace → reject |
 
 ## `[server]`
 
-| Ключ | Пример | Описание |
+| Key | Example | Description |
 |---|---|---|
 | `node_name` | `"socket-1"` |  |
 | `log_level` | `"info"` |  |
 
 ## `[server.ws]`
 
-| Ключ | Пример | Описание |
+| Key | Example | Description |
 |---|---|---|
 | `listen` | `"0.0.0.0:8000"` |  |
 | `path` | `"/connection/websocket"` |  |
@@ -29,7 +29,7 @@ description: Все ключи config.toml
 
 ## `[server.sse]`
 
-| Ключ | Пример | Описание |
+| Key | Example | Description |
 |---|---|---|
 | `enabled` | `true` |  |
 | `path` | `"/connection/sse"` |  |
@@ -37,20 +37,20 @@ description: Все ключи config.toml
 
 ## `[server.http_api]`
 
-| Ключ | Пример | Описание |
+| Key | Example | Description |
 |---|---|---|
 | `listen` | `"0.0.0.0:8001"` |  |
 | `path` | `"/api"` |  |
 
 ## `[server.grpc_api]`
 
-| Ключ | Пример | Описание |
+| Key | Example | Description |
 |---|---|---|
 | `listen` | `"0.0.0.0:8002"` |  |
 
 ## `[server.admin]`
 
-| Ключ | Пример | Описание |
+| Key | Example | Description |
 |---|---|---|
 | `listen` | `"127.0.0.1:8003"` |  |
 | `enabled` | `true` |  |
@@ -59,13 +59,13 @@ description: Все ключи config.toml
 
 ## `[server.health]`
 
-| Ключ | Пример | Описание |
+| Key | Example | Description |
 |---|---|---|
 | `listen` | `"0.0.0.0:8004"` | /health, /ready |
 
 ## `[server.security]`
 
-| Ключ | Пример | Описание |
+| Key | Example | Description |
 |---|---|---|
 | `allowed_origins` | `["https://app.example.com"]` |  |
 | `cors_allowed_origins` | `["https://app.example.com"]` |  |
@@ -76,7 +76,7 @@ description: Все ключи config.toml
 
 ## `[server.conn_limits]`
 
-| Ключ | Пример | Описание |
+| Key | Example | Description |
 |---|---|---|
 | `max_connections` | `0` |  |
 | `max_connections_per_ip` | `100` |  |
@@ -85,7 +85,7 @@ description: Все ключи config.toml
 
 ## `[server.tls]`
 
-| Ключ | Пример | Описание |
+| Key | Example | Description |
 |---|---|---|
 | `enabled` | `false` |  |
 | `cert_path` | `"/etc/socket/tls/cert.pem"` |  |
@@ -93,16 +93,16 @@ description: Все ключи config.toml
 
 ## `[redis]`
 
-| Ключ | Пример | Описание |
+| Key | Example | Description |
 |---|---|---|
-| `enabled` | `false` | true → мультинода (RedisBroker); false → одна нода (память) |
+| `enabled` | `false` | true → multi-node (RedisBroker); false → single node (in-memory) |
 | `url` | `"redis://127.0.0.1:6379"` |  |
 | `prefix` | `"socket"` |  |
 | `idempotency_ttl` | `"5m"` |  |
 
 ## `[auth.jwt]`
 
-| Ключ | Пример | Описание |
+| Key | Example | Description |
 |---|---|---|
 | `algorithm` | `"HS256"` |  |
 | `hmac_secret` | `"${JWT_HMAC_SECRET}"` |  |
@@ -111,21 +111,21 @@ description: Все ключи config.toml
 
 ## `[api_keys]`
 
-| Ключ | Пример | Описание |
+| Key | Example | Description |
 |---|---|---|
 | `key` | `"${API_KEY_BACKEND}"` |  |
 | `allow` | `["publish","broadcast","presence","history","subscribe",` |  |
 
 ## `[api_keys]`
 
-| Ключ | Пример | Описание |
+| Key | Example | Description |
 |---|---|---|
 | `key` | `"${API_KEY_PUBLISHER}"` |  |
 | `allow` | `["publish","broadcast"]` |  |
 
 ## `[defaults]`
 
-| Ключ | Пример | Описание |
+| Key | Example | Description |
 |---|---|---|
 | `presence` | `false` |  |
 | `join_leave` | `false` |  |
@@ -136,7 +136,7 @@ description: Все ключи config.toml
 
 ## `[defaults.access]`
 
-| Ключ | Пример | Описание |
+| Key | Example | Description |
 |---|---|---|
 | `subscribe` | `"token"` |  |
 | `publish` | `"off"` |  |
@@ -145,21 +145,21 @@ description: Все ключи config.toml
 
 ## `[limits]`
 
-| Ключ | Пример | Описание |
+| Key | Example | Description |
 |---|---|---|
 | `max_channels_per_connection` | `1000` |  |
 | `max_commands_per_second` | `100` |  |
 
 ## `[namespaces.news]`
 
-| Ключ | Пример | Описание |
+| Key | Example | Description |
 |---|---|---|
 | `history_size` | `100` |  |
 | `history_ttl` | `"10m"` |  |
 
 ## `[namespaces.news.access]`
 
-| Ключ | Пример | Описание |
+| Key | Example | Description |
 |---|---|---|
 | `subscribe` | `"public"` |  |
 | `publish` | `"off"` |  |
@@ -168,7 +168,7 @@ description: Все ключи config.toml
 
 ## `[namespaces.chat]`
 
-| Ключ | Пример | Описание |
+| Key | Example | Description |
 |---|---|---|
 | `presence` | `true` |  |
 | `join_leave` | `true` |  |
@@ -178,7 +178,7 @@ description: Все ключи config.toml
 
 ## `[namespaces.chat.access]`
 
-| Ключ | Пример | Описание |
+| Key | Example | Description |
 |---|---|---|
 | `subscribe` | `"token"` |  |
 | `publish` | `"token"` |  |
@@ -187,21 +187,21 @@ description: Все ключи config.toml
 
 ## `[namespaces.chat.rate_limit]`
 
-| Ключ | Пример | Описание |
+| Key | Example | Description |
 |---|---|---|
 | `publish` | `{ rate = 20, burst = 40, scope = "client" }` |  |
 | `subscribe` | `{ rate = 10, burst = 10, scope = "client" }` |  |
 
 ## `[namespaces.user]`
 
-| Ключ | Пример | Описание |
+| Key | Example | Description |
 |---|---|---|
 | `history_size` | `50` |  |
 | `history_ttl` | `"72h"` |  |
 
 ## `[namespaces.user.access]`
 
-| Ключ | Пример | Описание |
+| Key | Example | Description |
 |---|---|---|
 | `subscribe` | `"token"` |  |
 | `publish` | `"off"` |  |
@@ -210,14 +210,14 @@ description: Все ключи config.toml
 
 ## `[shutdown]`
 
-| Ключ | Пример | Описание |
+| Key | Example | Description |
 |---|---|---|
 | `drain_timeout` | `"30s"` |  |
 | `reconnect_advice` | `true` |  |
 
 ## `[events]`
 
-| Ключ | Пример | Описание |
+| Key | Example | Description |
 |---|---|---|
 | `enabled` | `false` |  |
 | `endpoint` | `"https://app.example.com/socket/events"` |  |
@@ -226,7 +226,7 @@ description: Все ключи config.toml
 
 ## `[telemetry]`
 
-| Ключ | Пример | Описание |
+| Key | Example | Description |
 |---|---|---|
 | `log_format` | `"json"` |  |
 | `tracing_enabled` | `false` |  |

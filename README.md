@@ -1,52 +1,52 @@
 # Socket
 
-Настраиваемый realtime-движок (WebSocket pub/sub) — «как Centrifugo, но настраиваемее».
-Самостоятельный сервер, запускается независимо. Монорепо: Rust-бэкенд + React-фронтенд + доки.
+A configurable realtime engine (WebSocket pub/sub) — "like Centrifugo, but more configurable".
+A standalone server that runs independently. Monorepo: Rust backend + React frontend + docs.
 
-> Полный дизайн — [`docs/architecture.md`](docs/architecture.md).
+> Full design — [`docs/architecture.md`](docs/architecture.md).
 
-## Структура
+## Structure
 
 ```
 socket/
 ├── crates/
 │   ├── server/      # axum: WS/SSE, Server API (HTTP+gRPC), admin, health
-│   ├── core/        # конфиг, auth (JWT+glob), hub, namespace, ApiService
-│   ├── broker/      # trait Broker + Redis-реализация
-│   └── protocol/    # prost/tonic типы из proto/
-├── proto/           # socket.proto — единый контракт
+│   ├── core/        # config, auth (JWT+glob), hub, namespace, ApiService
+│   ├── broker/      # trait Broker + Redis implementation
+│   └── protocol/    # prost/tonic types from proto/
+├── proto/           # socket.proto — the single contract
 ├── packages/
-│   ├── client-ts/   # клиентский SDK (реконнект, recovery, реестр подписок)
-│   └── proto-gen/   # protobuf-es типы (общие для client-ts и web)
+│   ├── client-ts/   # client SDK (reconnect, recovery, subscription registry)
+│   └── proto-gen/   # protobuf-es types (shared by client-ts and web)
 ├── web/             # admin UI (React + Mantine)
-├── docs/            # документация (docmd) + architecture.md
-├── config.toml      # конфиг движка
-├── justfile         # оркестрация
+├── docs/            # documentation (docmd) + architecture.md
+├── config.toml      # engine config
+├── justfile         # orchestration
 └── docker-compose.yml
 ```
 
-## Требования
+## Requirements
 
 - Rust ≥ 1.80, `cargo`
 - Node ≥ 20, `pnpm`
 - Docker (Redis)
-- `just` (опционально)
+- `just` (optional)
 
-## Быстрый старт
+## Quick start
 
 ```bash
 just infra-up        # Redis
-just server          # движок (cargo run -p socket-server)
+just server          # engine (cargo run -p socket-server)
 just web             # admin UI (Vite)
-just docs            # документация (docmd)
+just docs            # documentation (docmd)
 ```
 
-## Статус
+## Status
 
-Этап 1 (ядро одной ноды) реализован и протестирован; остальное — скелет с `TODO`.
-Полный статус по этапам — [`docs/progress.md`](docs/progress.md). План реализации —
-[`docs/architecture.md`](docs/architecture.md) (раздел 13).
+Stage 1 (single-node core) is implemented and tested; the rest is a skeleton with `TODO`s.
+Full per-stage status — [`docs/progress.md`](docs/progress.md). Implementation plan —
+[`docs/architecture.md`](docs/architecture.md) (section 13).
 
-## Стек
+## Stack
 
 Rust · axum · tokio · Protobuf · Redis · React · Mantine · docmd
