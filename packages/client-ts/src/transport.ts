@@ -1,7 +1,7 @@
 // SDK transports behind a single interface (architecture section 4).
 // WS — bidirectional socket. SSE — split session (EventSource downstream + POST upstream).
 
-import { type ConnectResult, type Reply } from "@manifold/proto-gen";
+import { type ConnectResult, type Reply } from "manifold-proto-gen";
 import { decodeReply } from "./codec.js";
 
 export interface Transport {

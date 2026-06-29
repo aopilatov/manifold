@@ -20,10 +20,10 @@ COPY packages ./packages
 COPY web ./web
 
 # proto-gen (buf) → client SDK → admin UI.
-RUN pnpm --filter @manifold/proto-gen generate \
- && pnpm --filter @manifold/proto-gen build \
- && pnpm --filter @manifold/client build \
- && pnpm --filter @manifold/web build
+RUN pnpm --filter manifold-proto-gen generate \
+ && pnpm --filter manifold-proto-gen build \
+ && pnpm --filter manifold-client build \
+ && pnpm --filter manifold-web build
 
 # ──────────────────────────────────────────────────────────────
 # Stage 2 — build: compile the Rust server.

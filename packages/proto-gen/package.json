@@ -1,8 +1,10 @@
 {
-  "name": "@manifold/proto-gen",
-  "version": "0.1.0",
+  "name": "manifold-proto-gen",
+  "version": "1.0.0",
   "description": "protobuf-es types generated from proto/manifold.proto (shared by client-ts and web)",
+  "license": "MIT",
   "type": "module",
+  "publishConfig": { "access": "public" },
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "exports": {

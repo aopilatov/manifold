@@ -12,7 +12,7 @@ import {
   type Reply,
   type StreamPosition,
   type SubscribeResult,
-} from "@manifold/proto-gen";
+} from "manifold-proto-gen";
 import { jitteredDelay } from "./backoff.js";
 import { encodeCommand } from "./codec.js";
 import { makeTransport, type Transport } from "./transport.js";

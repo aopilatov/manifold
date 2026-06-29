@@ -4,9 +4,9 @@
   "version": "0.1.0",
   "packageManager": "pnpm@9.12.0",
   "scripts": {
-    "proto:gen": "pnpm --filter @manifold/proto-gen generate",
-    "web:dev": "pnpm --filter @manifold/web dev",
-    "web:build": "pnpm --filter @manifold/web build",
+    "proto:gen": "pnpm --filter manifold-proto-gen generate",
+    "web:dev": "pnpm --filter manifold-web dev",
+    "web:build": "pnpm --filter manifold-web build",
     "docs:gen": "node docs/generate.mjs",
     "docs:dev": "node docs/generate.mjs && cd docs && npx @docmd/core dev",
     "docs:build": "node docs/generate.mjs && cd docs && npx @docmd/core build"

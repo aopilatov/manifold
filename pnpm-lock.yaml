@@ -17,7 +17,7 @@ importers:
       '@bufbuild/protobuf':
         specifier: ^2.2.0
         version: 2.12.1
-      '@manifold/proto-gen':
+      manifold-proto-gen:
         specifier: workspace:*
         version: link:../proto-gen
     devDependencies:
@@ -55,9 +55,6 @@ importers:
 
   web:
     dependencies:
-      '@manifold/client':
-        specifier: workspace:*
-        version: link:../packages/client-ts
       '@mantine/charts':
         specifier: ^7.13.0
         version: 7.17.8(@mantine/core@7.17.8(@mantine/hooks@7.17.8(react@18.3.1))(@types/react@18.3.31)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(@mantine/hooks@7.17.8(react@18.3.1))(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(recharts@2.15.4(react-dom@18.3.1(react@18.3.1))(react@18.3.1))
@@ -76,6 +73,9 @@ importers:
       '@mantine/notifications':
         specifier: ^7.13.0
         version: 7.17.8(@mantine/core@7.17.8(@mantine/hooks@7.17.8(react@18.3.1))(@types/react@18.3.31)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(@mantine/hooks@7.17.8(react@18.3.1))(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+      manifold-client:
+        specifier: workspace:*
+        version: link:../packages/client-ts
       mantine-datatable:
         specifier: ^7.11.0
         version: 7.17.1(@mantine/core@7.17.8(@mantine/hooks@7.17.8(react@18.3.1))(@types/react@18.3.31)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(@mantine/hooks@7.17.8(react@18.3.1))(clsx@2.1.1)(react@18.3.1)
