@@ -60,6 +60,7 @@ key_path  = "/etc/socket/tls/key.pem"
 #  Брокер
 # ──────────────────────────────────────────────
 [redis]
+enabled         = false          # true → мультинода (RedisBroker); false → одна нода (память)
 url             = "redis://127.0.0.1:6379"
 prefix          = "socket"
 idempotency_ttl = "5m"

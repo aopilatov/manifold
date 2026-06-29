@@ -138,6 +138,9 @@ pub struct Redis {
     pub prefix: String,
     #[serde(default)]
     pub idempotency_ttl: Option<String>,
+    /// true → мультинода через RedisBroker; false → одна нода (MemoryBroker).
+    #[serde(default)]
+    pub enabled: bool,
 }
 
 #[derive(Debug, Deserialize)]

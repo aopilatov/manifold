@@ -11,7 +11,8 @@ mod ws;
 use std::sync::Arc;
 
 use axum::{routing::get, Router};
-use socket_core::{api::ApiService, hub::Hub, Config};
+use socket_broker::{Broker, MemoryBroker, RedisBroker};
+use socket_core::{api::ApiService, delivery::HubDelivery, hub::Hub, Config};
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
@@ -25,7 +26,17 @@ async fn main() -> anyhow::Result<()> {
 
     let cfg = Arc::new(cfg);
     let hub = Hub::new();
-    let api = Arc::new(ApiService::new(cfg.clone(), hub));
+    let delivery = HubDelivery::new(hub.clone());
+
+    let broker: Arc<dyn Broker> = if cfg.redis.enabled {
+        tracing::info!(url = %cfg.redis.url, "брокер: Redis (мультинода)");
+        RedisBroker::connect(&cfg.redis.url, cfg.redis.prefix.clone(), delivery).await?
+    } else {
+        tracing::info!("брокер: in-memory (одна нода)");
+        MemoryBroker::new(delivery)
+    };
+
+    let api = Arc::new(ApiService::new(cfg.clone(), hub, broker));
 
     // health/readiness на отдельном порту (раздел 12)
     let health_addr = cfg.server.health.listen.clone();

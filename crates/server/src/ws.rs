@@ -49,7 +49,7 @@ async fn connection(api: Arc<ApiService>, socket: WebSocket) {
         match msg {
             Message::Binary(b) => {
                 if let Ok(cmd) = Command::decode(b.as_slice()) {
-                    if let Some(reply) = api.handle_command(&client_id, cmd) {
+                    if let Some(reply) = api.handle_command(&client_id, cmd).await {
                         if tx.send(reply).await.is_err() {
                             break;
                         }
@@ -61,7 +61,7 @@ async fn connection(api: Arc<ApiService>, socket: WebSocket) {
         }
     }
 
-    api.cleanup(&client_id);
+    api.cleanup(&client_id).await;
     writer.abort();
 }
 
@@ -83,7 +83,7 @@ async fn handshake(
     match api.authenticate(&creq.token) {
         Ok(claims) => {
             let client_id = api.register(Some(claims), tx.clone());
-            let res = api.connect(&client_id, &creq);
+            let res = api.connect(&client_id, &creq).await;
             let reply = Reply {
                 id,
                 error: None,

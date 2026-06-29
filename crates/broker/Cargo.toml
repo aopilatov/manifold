@@ -12,3 +12,5 @@ async-trait = { workspace = true }
 futures = { workspace = true }
 thiserror = { workspace = true }
 tracing = { workspace = true }
+prost = { workspace = true }
+dashmap = { workspace = true }
