@@ -1,0 +1,21 @@
+# Build outputs
+target/
+dist/
+dist-docs/
+**/dist/
+**/node_modules/
+node_modules/
+
+# VCS / local
+.git/
+.gitignore
+*.log
+.DS_Store
+.idea/
+.vscode/
+
+# Docs site (not needed in the image)
+docs/
+
+# CI / local scratch
+.claude/

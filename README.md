@@ -41,12 +41,6 @@ just web             # admin UI (Vite)
 just docs            # documentation (docmd)
 ```
 
-## Status
-
-Stage 1 (single-node core) is implemented and tested; the rest is a skeleton with `TODO`s.
-Full per-stage status — [`docs/progress.md`](docs/progress.md). Implementation plan —
-[`docs/architecture.md`](docs/architecture.md) (section 13).
-
 ## Stack
 
 Rust · axum · tokio · Protobuf · Redis · React · Mantine · docmd

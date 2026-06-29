@@ -6,25 +6,37 @@ services:
       - "6379:6379"
     volumes:
       - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
 
-  # Engine (built image). For dev usually run via `just server`.
+  # Engine — built from the local Dockerfile (multi-stage → ubi10-micro runtime).
   server:
-    build: .
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: socket:latest
     depends_on:
-      - redis
+      redis:
+        condition: service_healthy
     environment:
       SOCKET_CONFIG: /app/config.toml
       JWT_HMAC_SECRET: ${JWT_HMAC_SECRET:-dev-secret}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:-admin}
       API_KEY_BACKEND: ${API_KEY_BACKEND:-dev-backend-key}
       API_KEY_PUBLISHER: ${API_KEY_PUBLISHER:-dev-publisher-key}
+    # Mount your config without rebuilding. For multi-node, set redis.enabled = true
+    # and redis.url = "redis://redis:6379" (the compose service hostname).
+    volumes:
+      - ./config.toml:/app/config.toml:ro
     ports:
       - "8000:8000"   # ws
       - "8001:8001"   # http api
       - "8002:8002"   # grpc api
       - "8003:8003"   # admin
-      - "8004:8004"   # health
-    profiles: ["full"]   # docker compose --profile full up
+      - "8004:8004"   # health / metrics
 
 volumes:
   redis-data:
